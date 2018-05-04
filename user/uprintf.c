@@ -53,8 +53,8 @@ static void putc(int fd, char c)
 static int puts(int fd, const char *str)
 {
 	int cnt = 0;
-	while (*str++) {
-		putc(fd, *str);
+	while (*str) {
+		putc(fd, *str++);
 		cnt++;
 	}
 

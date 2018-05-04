@@ -378,6 +378,7 @@ int chdir(char *pathname)
 	if (i->type != T_DIR) {
 		iunlockput(i);
 		end_transaction();
+		prink("%s is not a directory!!!\n", pathname);
 		return -1;
 	}
 	iunlock(i);

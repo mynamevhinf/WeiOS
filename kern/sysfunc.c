@@ -475,7 +475,7 @@ int exec(char *pathname, char **argv)
 		// i have already call iunlockput() in name if failed.
 		// so it is no need to do it again.
 		end_transaction();
-		prink("exec error: no such file -- %s\n", pathname);
+		//prink("exec error: no such file -- %s\n", pathname);
 		return -1;
 	}
 
