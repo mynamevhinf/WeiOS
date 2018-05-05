@@ -125,7 +125,7 @@ int getcmd(char *buf, int nbytes)
 {
     printf(stdout, "Wsh> ");
     memset(buf, 0, nbytes);
-    shell_gets(buf, nbytes);
+    gets(buf, nbytes);
     if (buf[0] == '\0')
         return -1;
     return 0;

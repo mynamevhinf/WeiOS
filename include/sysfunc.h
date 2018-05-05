@@ -16,6 +16,7 @@ int kill(pid_t pid);
 ushort wait(void);
 void exit(void);
 void *sbrk(int n);
+int brk(uint32_t heap_break);
 int exec(char *pathname, char **argv);
 int user_page_alloc(pid_t pid, void *va, int perm);
 int user_page_map(pid_t srcpid, void *srcva,

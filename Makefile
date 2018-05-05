@@ -95,6 +95,9 @@ UPROGS = \
 	_cat\
 	_mkdir\
 	_cd\
+	_cp\
+	_mv\
+	_rm\
 
 fs.img: mkfs $(UPROGS)
 	./mkfs fs.img Makefile cattest.txt $(UPROGS)

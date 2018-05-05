@@ -433,7 +433,7 @@ void *sbrk(int n)
   	if (n < 0) {
   		real_n = (n % (~0x80000000));
   		end_addr = ROUNDDOWN(base_addr - real_n, PGSIZE);
-  		if (end_addr < ROUNDUP(curr_p->base_mem_sz + UTEXT, PGSIZE))
+  		if (end_addr < ROUNDUP(curr_p->base_mem_sz, PGSIZE))
   			return 0;
     	curr_p->heap_ptr = end_addr;
   		while (end_addr < base_addr) {
@@ -451,6 +451,28 @@ void *sbrk(int n)
   	}
 	return (void *)(base_addr);
 } 
+
+int brk(uint32_t heap_break)
+{
+	struct proc *curr_p = curproc;
+
+	if (heap_break > curr_p->heap_ptr) {
+		heap_break = ROUNDUP(heap_break, PGSIZE);
+		if (heap_break <= HEAPTOP)
+			curr_p->heap_ptr = heap_break;
+		else
+			return -1;
+	} else if (heap_break < curr_p->heap_ptr) {
+		heap_break = ROUNDDOWN(heap_break, PGSIZE);
+		if (heap_break < ROUNDUP(curr_p->base_mem_sz, PGSIZE))
+			return -1;
+		while (curr_p->heap_ptr > heap_break) {
+			curr_p->heap_ptr -=  PGSIZE;
+			page_remove(curr_p->proc_pgdir, (void *)(curr_p->heap_ptr));
+		}
+	}
+	return 0;
+}
 
 static inline uint32_t vesp_to_esp(uint32_t esp)
 {

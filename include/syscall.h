@@ -38,6 +38,8 @@
 #define SYS_mknod			34
 #define SYS_welcome			35
 #define SYS_lsdir 			36
+#define SYS_brk 			37
+
 
 #ifndef __ASSEMBLER__
 

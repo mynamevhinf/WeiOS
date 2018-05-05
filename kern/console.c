@@ -175,7 +175,8 @@ int compatible_console_read(struct inode *i, char *dst, int nbytes)
                 return -1;
             }
         }
-        c = console_getc();
+        //c = console_getc();
+        c = tyqueue->buf[(tyqueue->rpos++ % TTY_BUF)];
         if (c == ('D' - '@')) {
             if (cnt > 0)
                 tyqueue->rpos--;
@@ -183,6 +184,7 @@ int compatible_console_read(struct inode *i, char *dst, int nbytes)
         }
         *dst++ = c;
         cnt++;
+        cga_putc((char)c, lattr);
         if (c == '\n')
             break;
     }

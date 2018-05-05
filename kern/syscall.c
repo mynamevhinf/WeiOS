@@ -173,6 +173,11 @@ static int sys_sbrk(int n)
 	return (int)sbrk(n);
 }
 
+static int sys_brk(uint32_t heap_break)
+{
+	return brk(heap_break);
+}
+
 static int sys_pipe(int fd[2])
 {
 	return pipe(fd);
@@ -324,6 +329,8 @@ int32_t syscall(uint32_t syscallno, uint32_t a1,
 			return 0;
 		case SYS_lsdir:
 			return sys_ls((const char *)a1);
+		case SYS_brk:
+			return sys_brk(a1);
 		default:
 			prink("Bad syscall number!\n");
 			return -1;

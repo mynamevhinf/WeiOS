@@ -16,6 +16,11 @@ void *sbrk(int n)
 	return (void *)usyscall(SYS_sbrk, (uint32_t)n, 0, 0, 0, 0);
 }
 
+int brk(void *heap_brk)
+{
+	return usyscall(SYS_brk, (uint32_t)heap_brk, 0, 0, 0, 0);
+}
+
 ushort wait(void)
 {
 	return usyscall(SYS_wait, 0, 0, 0, 0, 0);

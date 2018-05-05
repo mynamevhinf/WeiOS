@@ -27,6 +27,7 @@ char *gets(char *buf, int max)
 	return buf;
 }
 
+/*
 char *shell_gets(char *buf, int max)
 {
     int i, cc;
@@ -36,7 +37,7 @@ char *shell_gets(char *buf, int max)
         cc = read(stdin, &c, 1);
         if (cc < 1)
             break;
-        printf(1, "%c", c);
+        //printf(1, "%c", c);
         buf[i++] = c;
         if(c == '\n' || c == '\r')
             break;
@@ -44,6 +45,7 @@ char *shell_gets(char *buf, int max)
     buf[i] = '\0';
     return buf;
 }
+*/
 
 static void putc(int fd, char c)
 {
