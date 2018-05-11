@@ -1,3 +1,3 @@
 #!/bin/sh
 
-find ~/WeiOS/ -name '*.[cSh]' | xargs wc -l
+find ../ -name '*.[cSh]' | xargs wc -l

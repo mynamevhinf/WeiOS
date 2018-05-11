@@ -3,13 +3,6 @@
 #include <include/trap.h>
 #include <include/picirq.h>
 
-void pic_sendEOI(uchar irq)
-{
-	if (irq >= (IRQ_STARTED + PIC_SLAVE_OFF))
-		outb(PIC_SLAVE_CMD, PIC_EOI);
-	outb(PIC_MASTER_CMD, PIC_EOI);
-}
-
 void irq_set_mask(uchar irq_line)
 {
 	uint16_t	port;
@@ -101,6 +94,6 @@ void irq_init(void)
 
 void irq_eoi(void)
 {
-	outb(PIC_MASTER_CMD, 0x20);
-	outb(PIC_SLAVE_CMD, 0x20);
+	outb(PIC_MASTER_CMD, PIC_EOI);
+	outb(PIC_SLAVE_CMD, PIC_EOI);
 }

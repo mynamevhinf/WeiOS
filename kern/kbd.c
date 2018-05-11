@@ -7,8 +7,9 @@
 #include <include/console.h>
 #include <include/sysfunc.h>
 
+//#define BACKSPACE  0x0100
+#define CONTROL(X) ((X)-'@')
 extern struct tty_struct console_tty; 
-
 static struct spinlock kbd_lock;
 
 /*****************************************
@@ -58,13 +59,41 @@ uint kbd_get_data(char *rdata)
 void kbd_intr(void)
 {
     char c, rc;
+    struct tty_queue  *rbuf, *wbuf;
 
+    rbuf = &console_tty.read_buf;
+    wbuf = &console_tty.write_buf;
     spin_lock_irqsave(&kbd_lock);
-    while ((c = (char)kbd_get_data(&rc)) > 0) {
-        //prink("%c\n", c);
-        console_tty.read_buf.buf[(console_tty.read_buf.wpos++ % TTY_BUF)] = rc;
-        console_tty.write_buf.buf[(console_tty.write_buf.wpos++ % TTY_BUF)] = c;
-        wakeup(&console_tty.write_buf.procs_list, &kbd_lock); 
+    while ((c = (char)kbd_get_data(&rc)) >= 0) {
+        if (rbuf->wpos - rbuf->rpos < TTY_BUF)
+            rbuf->buf[(rbuf->wpos++ % TTY_BUF)] = rc;
+        switch (c) {
+            case CONTROL('P'):      // process listing.
+                break;
+            case CONTROL('U'):// kill line
+                while (wbuf->wpos != wbuf->rpos 
+                        && wbuf->buf[(wbuf->wpos-1) % TTY_BUF] != '\n')
+                {
+                    wbuf->wpos--;
+                    console_putc('\b');
+                }
+                break;
+            case '\x7f':
+            case CONTROL('H'):  // Backspace
+                if (wbuf->wpos != wbuf->rpos) {
+                    wbuf->wpos--;
+                    console_putc('\b');
+                }
+                break;
+            default:
+                if (c != 0 && (wbuf->wpos - wbuf->rpos < TTY_BUF)) {
+                    c = (c=='\r')?'\n':c;
+                    console_putc(c);
+                    wbuf->buf[(wbuf->wpos++ % TTY_BUF)] = c;
+                    if (c == '\n' || wbuf->wpos == wbuf->rpos + TTY_BUF) 
+                        wakeup(&console_tty.write_buf.procs_list, &kbd_lock);
+                }
+        }
     }
     spin_unlock_irqrestore(&kbd_lock);
 }

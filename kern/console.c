@@ -184,7 +184,6 @@ int compatible_console_read(struct inode *i, char *dst, int nbytes)
         }
         *dst++ = c;
         cnt++;
-        cga_putc((char)c, lattr);
         if (c == '\n')
             break;
     }

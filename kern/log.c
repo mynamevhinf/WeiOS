@@ -24,7 +24,7 @@ void log_init(int dev)
     log_manager.dev = dev;
     LIST_HEAD_INIT(log_manager.procs_waitting);
     for (int i = 0; i < LOGSIZE; i++)
-    	if (!(buf_ptrs[i].data = (char *)kmalloc(BLKSIZE, __GFP_ZERO)))
+    	if (!(buf_ptrs[i].data = (char *)kmalloc(BLKSIZE, __GFP_ZERO|__GFP_DMA)))
     		panic("log_init(): failed!!!\n");
     recover_from_log();
 }

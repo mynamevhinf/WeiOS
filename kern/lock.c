@@ -61,7 +61,6 @@ void spin_lock_irqsave(struct spinlock *lk)
 
 	__sync_synchronize();
 	lk->cpu = mycpu();
-	getcallerpcs(&lk, lk->pcs);
 }
 
 void spin_unlock_irqrestore(struct spinlock *lk)
@@ -69,7 +68,6 @@ void spin_unlock_irqrestore(struct spinlock *lk)
 	if (!holding_spinlock(lk)) 
 		panic("Lock belongs to other!\n");
 
-	lk->pcs[0] = 0;
 	lk->cpu = 0;
 	__sync_synchronize();
 	asm volatile("movl $0, %0" : "+m" (lk->locked) : );
@@ -113,20 +111,4 @@ int holding_sleeplock(struct sleeplock *slk)
 	spin_unlock_irqrestore(&slk->lk);
 
 	return out;
-}
-
-void getcallerpcs(void *v, uint32_t pcs[])
-{
-	uint32_t *ebp;
-	int i;
-
-    ebp = (uint32_t *)v - 2;
-    for(i = 0; i < 10; i++){
-        if(ebp == 0 || ebp < (uint32_t *)KERNBASE || ebp == (uint32_t *)0xffffffff)
-	    	break;
-	    pcs[i] = ebp[1];     // saved %eip
-	    ebp = (uint*)ebp[0]; // saved %ebp
-	}
-	for(; i < 10; i++)
-	    pcs[i] = 0;
 }

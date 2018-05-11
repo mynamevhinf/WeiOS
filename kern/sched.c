@@ -205,7 +205,6 @@ void sched(void)
 void yield(void)
 {
     spin_lock_irqsave(&proc_manager.proc_table_lock);
-    prink("wa!\n");
     myproc()->status = RUNNABLE;
     sched();
     spin_unlock_irqrestore(&proc_manager.proc_table_lock);

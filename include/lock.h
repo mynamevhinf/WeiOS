@@ -8,7 +8,6 @@ struct spinlock {
     uint32_t locked;
     char *name;
     void *cpu;    //Multiprocessor
-	uint32_t pcs[10];
 };
 
 struct sleeplock {
@@ -29,6 +28,5 @@ void sleeplock_init(struct sleeplock *slk, char *name);
 int holding_sleeplock(struct sleeplock *slk);
 void sleep_lock(struct sleeplock *slk);
 void sleep_unlock(struct sleeplock *slk);
-void getcallerpcs(void *v, uint32_t pcs[]);
 
 #endif

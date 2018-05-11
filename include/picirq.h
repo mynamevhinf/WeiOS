@@ -21,7 +21,6 @@
 
 #ifndef __ASSEMBLER__
 
-void pic_sendEOI(uchar irq);
 void irq_set_mask(uchar irq_line);
 void irq_clear_mask(uchar irq_line);
 uint16_t pic_get_irr(void);
