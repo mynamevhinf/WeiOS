@@ -378,13 +378,14 @@ int readi(struct inode *i, char *dst, uint32_t offset, uint32_t nbytes)
     uint32_t rdbytes;
 
     if (i->type == T_DEV) {
-        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read))
+        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read)) 
             return -E_BAD_DEV;
         return dev_structs[i->major].read(i, dst, nbytes);
     }
 
     if ((offset > i->file_siz) || (offset + nbytes < offset))
         return -E_BAD_OFFSET;
+
     if (offset + nbytes > i->file_siz)
         nbytes = i->file_siz - offset;
 
@@ -528,7 +529,7 @@ static struct inode *namex(char *path, int nameiparent, char *name)
         curi = next;
         if (*end)
             start = end + 1;
-        if (*end == '\0' || *start == '\0')
+        if (*end == '\0' || *start == '\0') 
             return curi;
     }
 }

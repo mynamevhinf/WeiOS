@@ -133,11 +133,10 @@ int file_write(struct file *f, char *src, int nbytes)
 		perop = ((nbytes-total)>maxbytes)?(maxbytes):(nbytes-total);
 		begin_transaction();
 		ilock(f->inode);
-		if ((wrbytes = writei(f->inode, src+total, f->offset, perop) >= 0))
+		if ((wrbytes = writei(f->inode, src+total, f->offset, perop)) > 0)
 			f->offset += wrbytes;
 		iunlock(f->inode);
 		end_transaction();
-
 		if ((wrbytes < 0) || (wrbytes != perop))
 			return -1;
 		total += wrbytes;

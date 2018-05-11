@@ -79,7 +79,7 @@ void runcmd(struct cmd *cmd)
             if(ecmd->argv[0] == 0)
                 exit();
             px = 0;
-            while (splicingcmd(ecmd->argv[0], PATH, rscmd, &px)) 
+            while (splicingcmd(ecmd->argv[0], PATH, rscmd, &px))
                 if (exec(rscmd, ecmd->argv) == -1)
                     continue;
             printf(1, "Wsh: %s -- command not found!\n", ecmd->argv[0]);

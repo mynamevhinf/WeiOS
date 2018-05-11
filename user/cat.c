@@ -16,7 +16,7 @@ int wmain(int argc, char *argv[])
 		printf(1, "no such file or directory: %s!\n", argv[1]);
 		return 0;
 	}
-	while ((nbytes = read(fd, buf, 512)) >= 0)
+	while ((nbytes = read(fd, buf, 512)) > 0)
 		if (write(stdin, buf, nbytes) < 0)
 			break;
 	printf(1, "\n");

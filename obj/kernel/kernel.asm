@@ -11221,10 +11221,10 @@ f0103d47:	e8 f4 52 00 00       	call   f0109040 <namei>
 f0103d4c:	83 c4 10             	add    $0x10,%esp
 f0103d4f:	85 c0                	test   %eax,%eax
 f0103d51:	0f 84 3d 04 00 00    	je     f0104194 <exec+0x464>
+		end_transaction();
 		//prink("exec error: no such file -- %s\n", pathname);
 		return -1;
 	}
-
 	// now check if the head is legel!!
 	ilock(i);
 f0103d57:	83 ec 0c             	sub    $0xc,%esp
@@ -11273,7 +11273,7 @@ f0103da1:	5f                   	pop    %edi
 f0103da2:	5d                   	pop    %ebp
 f0103da3:	c3                   	ret    
 f0103da4:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
-
+	}
 	// now check if the head is legel!!
 	ilock(i);
 	npgdir = 0;
@@ -19436,7 +19436,7 @@ f0106c58:	83 ec 1c             	sub    $0x1c,%esp
 f0106c5b:	8b 75 18             	mov    0x18(%ebp),%esi
 	pte_t *ptentry;
 	uint32_t j, pa, nbytes;
-
+	
 	for (j = 0; j < size; j += PGSIZE) {
 f0106c5e:	85 f6                	test   %esi,%esi
 f0106c60:	75 45                	jne    f0106ca7 <load_program+0x57>
@@ -19477,7 +19477,7 @@ int load_program(pde_t *pgdir, char *des, struct inode *i, uint32_t off, uint32_
 {
 	pte_t *ptentry;
 	uint32_t j, pa, nbytes;
-
+	
 	for (j = 0; j < size; j += PGSIZE) {
 f0106c9d:	81 c7 00 10 00 00    	add    $0x1000,%edi
 f0106ca3:	39 fe                	cmp    %edi,%esi
@@ -23001,16 +23001,16 @@ f0108027:	89 45 e4             	mov    %eax,-0x1c(%ebp)
 	int maxbytes;
 	
 	if (!f || (f->type == FS_NONE) || !(f->flag & (O_WRONLY|O_RDWR)))
-f010802a:	0f 84 9a 00 00 00    	je     f01080ca <file_write+0xba>
+f010802a:	0f 84 b0 00 00 00    	je     f01080e0 <file_write+0xd0>
 f0108030:	8b 06                	mov    (%esi),%eax
 f0108032:	85 c0                	test   %eax,%eax
-f0108034:	0f 84 90 00 00 00    	je     f01080ca <file_write+0xba>
+f0108034:	0f 84 a6 00 00 00    	je     f01080e0 <file_write+0xd0>
 f010803a:	f6 46 0c 06          	testb  $0x6,0xc(%esi)
-f010803e:	0f 84 86 00 00 00    	je     f01080ca <file_write+0xba>
+f010803e:	0f 84 9c 00 00 00    	je     f01080e0 <file_write+0xd0>
 		return -1;
 	if (f->type == FS_PIPE)
 f0108044:	83 f8 05             	cmp    $0x5,%eax
-f0108047:	0f 84 9d 00 00 00    	je     f01080ea <file_write+0xda>
+f0108047:	0f 84 a0 00 00 00    	je     f01080ed <file_write+0xdd>
 		return pipe_write(f->pipe, src, nbytes);
 
 	// i use only two types.
@@ -23020,138 +23020,133 @@ f0108047:	0f 84 9d 00 00 00    	je     f01080ea <file_write+0xda>
 f010804d:	8b 45 e4             	mov    -0x1c(%ebp),%eax
 f0108050:	31 ff                	xor    %edi,%edi
 f0108052:	85 c0                	test   %eax,%eax
-f0108054:	7f 12                	jg     f0108068 <file_write+0x58>
-f0108056:	e9 ad 00 00 00       	jmp    f0108108 <file_write+0xf8>
-f010805b:	90                   	nop
-f010805c:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
+f0108054:	0f 8e b1 00 00 00    	jle    f010810b <file_write+0xfb>
+f010805a:	8d b6 00 00 00 00    	lea    0x0(%esi),%esi
+		perop = ((nbytes-total)>maxbytes)?(maxbytes):(nbytes-total);
+f0108060:	8b 5d e4             	mov    -0x1c(%ebp),%ebx
+f0108063:	b8 00 24 00 00       	mov    $0x2400,%eax
+f0108068:	29 fb                	sub    %edi,%ebx
+f010806a:	81 fb 00 24 00 00    	cmp    $0x2400,%ebx
+f0108070:	0f 4f d8             	cmovg  %eax,%ebx
+		begin_transaction();
+f0108073:	e8 08 f9 ff ff       	call   f0107980 <begin_transaction>
+		ilock(f->inode);
+f0108078:	83 ec 0c             	sub    $0xc,%esp
+f010807b:	ff 76 14             	pushl  0x14(%esi)
+f010807e:	e8 bd 05 00 00       	call   f0108640 <ilock>
+		if ((wrbytes = writei(f->inode, src+total, f->offset, perop)) > 0)
+f0108083:	8b 45 dc             	mov    -0x24(%ebp),%eax
+f0108086:	53                   	push   %ebx
+f0108087:	ff 76 08             	pushl  0x8(%esi)
+f010808a:	01 f8                	add    %edi,%eax
+f010808c:	50                   	push   %eax
+f010808d:	ff 76 14             	pushl  0x14(%esi)
+f0108090:	e8 8b 0b 00 00       	call   f0108c20 <writei>
+f0108095:	83 c4 20             	add    $0x20,%esp
+f0108098:	85 c0                	test   %eax,%eax
+f010809a:	89 c2                	mov    %eax,%edx
+f010809c:	7e 03                	jle    f01080a1 <file_write+0x91>
+			f->offset += wrbytes;
+f010809e:	01 46 08             	add    %eax,0x8(%esi)
 		iunlock(f->inode);
+f01080a1:	83 ec 0c             	sub    $0xc,%esp
+f01080a4:	ff 76 14             	pushl  0x14(%esi)
+f01080a7:	89 55 e0             	mov    %edx,-0x20(%ebp)
+f01080aa:	e8 f1 06 00 00       	call   f01087a0 <iunlock>
 		end_transaction();
-
+f01080af:	e8 3c f9 ff ff       	call   f01079f0 <end_transaction>
 		if ((wrbytes < 0) || (wrbytes != perop))
+f01080b4:	8b 55 e0             	mov    -0x20(%ebp),%edx
+f01080b7:	83 c4 10             	add    $0x10,%esp
+f01080ba:	89 d0                	mov    %edx,%eax
+f01080bc:	c1 e8 1f             	shr    $0x1f,%eax
+f01080bf:	84 c0                	test   %al,%al
+f01080c1:	75 1d                	jne    f01080e0 <file_write+0xd0>
+f01080c3:	39 d3                	cmp    %edx,%ebx
+f01080c5:	75 19                	jne    f01080e0 <file_write+0xd0>
 			return -1;
 		total += wrbytes;
-f0108060:	83 c7 01             	add    $0x1,%edi
+f01080c7:	01 d7                	add    %edx,%edi
 		return pipe_write(f->pipe, src, nbytes);
 
 	// i use only two types.
 	total = 0;
 	maxbytes = ((MAXOPBLOCKS - 4) / 2) * BLKSIZE;
 	while (total < nbytes) {
-f0108063:	39 7d e4             	cmp    %edi,-0x1c(%ebp)
-f0108066:	7e 78                	jle    f01080e0 <file_write+0xd0>
-		perop = ((nbytes-total)>maxbytes)?(maxbytes):(nbytes-total);
-f0108068:	8b 5d e4             	mov    -0x1c(%ebp),%ebx
-f010806b:	b8 00 24 00 00       	mov    $0x2400,%eax
-f0108070:	29 fb                	sub    %edi,%ebx
-f0108072:	81 fb 00 24 00 00    	cmp    $0x2400,%ebx
-f0108078:	0f 4f d8             	cmovg  %eax,%ebx
-		begin_transaction();
-f010807b:	e8 00 f9 ff ff       	call   f0107980 <begin_transaction>
-		ilock(f->inode);
-f0108080:	83 ec 0c             	sub    $0xc,%esp
-f0108083:	ff 76 14             	pushl  0x14(%esi)
-f0108086:	e8 b5 05 00 00       	call   f0108640 <ilock>
-		if ((wrbytes = writei(f->inode, src+total, f->offset, perop) >= 0))
-f010808b:	8b 45 dc             	mov    -0x24(%ebp),%eax
-f010808e:	53                   	push   %ebx
-f010808f:	ff 76 08             	pushl  0x8(%esi)
-f0108092:	01 f8                	add    %edi,%eax
-f0108094:	50                   	push   %eax
-f0108095:	ff 76 14             	pushl  0x14(%esi)
-f0108098:	e8 83 0b 00 00       	call   f0108c20 <writei>
-f010809d:	89 c2                	mov    %eax,%edx
-f010809f:	83 c4 20             	add    $0x20,%esp
-f01080a2:	f7 d2                	not    %edx
-f01080a4:	c1 ea 1f             	shr    $0x1f,%edx
-f01080a7:	85 c0                	test   %eax,%eax
-f01080a9:	89 55 e0             	mov    %edx,-0x20(%ebp)
-f01080ac:	78 04                	js     f01080b2 <file_write+0xa2>
+f01080c9:	39 7d e4             	cmp    %edi,-0x1c(%ebp)
+f01080cc:	7f 92                	jg     f0108060 <file_write+0x50>
 			f->offset += wrbytes;
-f01080ae:	83 46 08 01          	addl   $0x1,0x8(%esi)
 		iunlock(f->inode);
-f01080b2:	83 ec 0c             	sub    $0xc,%esp
-f01080b5:	ff 76 14             	pushl  0x14(%esi)
-f01080b8:	e8 e3 06 00 00       	call   f01087a0 <iunlock>
 		end_transaction();
-f01080bd:	e8 2e f9 ff ff       	call   f01079f0 <end_transaction>
-
 		if ((wrbytes < 0) || (wrbytes != perop))
-f01080c2:	83 c4 10             	add    $0x10,%esp
-f01080c5:	3b 5d e0             	cmp    -0x20(%ebp),%ebx
-f01080c8:	74 96                	je     f0108060 <file_write+0x50>
+			return -1;
+		total += wrbytes;
+f01080ce:	89 f8                	mov    %edi,%eax
+	}
+	return total;
+f01080d0:	8d 65 f4             	lea    -0xc(%ebp),%esp
+f01080d3:	5b                   	pop    %ebx
+f01080d4:	5e                   	pop    %esi
+f01080d5:	5f                   	pop    %edi
+f01080d6:	5d                   	pop    %ebp
+f01080d7:	c3                   	ret    
+f01080d8:	90                   	nop
+f01080d9:	8d b4 26 00 00 00 00 	lea    0x0(%esi,%eiz,1),%esi
+f01080e0:	8d 65 f4             	lea    -0xc(%ebp),%esp
 	int total;
 	int wrbytes;
 	int maxbytes;
 	
 	if (!f || (f->type == FS_NONE) || !(f->flag & (O_WRONLY|O_RDWR)))
 		return -1;
-f01080ca:	b8 ff ff ff ff       	mov    $0xffffffff,%eax
+f01080e3:	b8 ff ff ff ff       	mov    $0xffffffff,%eax
 		if ((wrbytes < 0) || (wrbytes != perop))
 			return -1;
 		total += wrbytes;
 	}
 	return total;
-f01080cf:	8d 65 f4             	lea    -0xc(%ebp),%esp
-f01080d2:	5b                   	pop    %ebx
-f01080d3:	5e                   	pop    %esi
-f01080d4:	5f                   	pop    %edi
-f01080d5:	5d                   	pop    %ebp
-f01080d6:	c3                   	ret    
-f01080d7:	89 f6                	mov    %esi,%esi
-f01080d9:	8d bc 27 00 00 00 00 	lea    0x0(%edi,%eiz,1),%edi
-f01080e0:	8d 65 f4             	lea    -0xc(%ebp),%esp
-		iunlock(f->inode);
-		end_transaction();
-
-		if ((wrbytes < 0) || (wrbytes != perop))
-			return -1;
-		total += wrbytes;
-f01080e3:	89 f8                	mov    %edi,%eax
-	}
-	return total;
-f01080e5:	5b                   	pop    %ebx
-f01080e6:	5e                   	pop    %esi
-f01080e7:	5f                   	pop    %edi
-f01080e8:	5d                   	pop    %ebp
-f01080e9:	c3                   	ret    
+f01080e8:	5b                   	pop    %ebx
+f01080e9:	5e                   	pop    %esi
+f01080ea:	5f                   	pop    %edi
+f01080eb:	5d                   	pop    %ebp
+f01080ec:	c3                   	ret    
 	int maxbytes;
 	
 	if (!f || (f->type == FS_NONE) || !(f->flag & (O_WRONLY|O_RDWR)))
 		return -1;
 	if (f->type == FS_PIPE)
 		return pipe_write(f->pipe, src, nbytes);
-f01080ea:	8b 45 e4             	mov    -0x1c(%ebp),%eax
-f01080ed:	89 45 10             	mov    %eax,0x10(%ebp)
-f01080f0:	8b 45 dc             	mov    -0x24(%ebp),%eax
-f01080f3:	89 45 0c             	mov    %eax,0xc(%ebp)
-f01080f6:	8b 46 10             	mov    0x10(%esi),%eax
-f01080f9:	89 45 08             	mov    %eax,0x8(%ebp)
+f01080ed:	8b 45 e4             	mov    -0x1c(%ebp),%eax
+f01080f0:	89 45 10             	mov    %eax,0x10(%ebp)
+f01080f3:	8b 45 dc             	mov    -0x24(%ebp),%eax
+f01080f6:	89 45 0c             	mov    %eax,0xc(%ebp)
+f01080f9:	8b 46 10             	mov    0x10(%esi),%eax
+f01080fc:	89 45 08             	mov    %eax,0x8(%ebp)
 		if ((wrbytes < 0) || (wrbytes != perop))
 			return -1;
 		total += wrbytes;
 	}
 	return total;
-f01080fc:	8d 65 f4             	lea    -0xc(%ebp),%esp
-f01080ff:	5b                   	pop    %ebx
-f0108100:	5e                   	pop    %esi
-f0108101:	5f                   	pop    %edi
-f0108102:	5d                   	pop    %ebp
+f01080ff:	8d 65 f4             	lea    -0xc(%ebp),%esp
+f0108102:	5b                   	pop    %ebx
+f0108103:	5e                   	pop    %esi
+f0108104:	5f                   	pop    %edi
+f0108105:	5d                   	pop    %ebp
 	int maxbytes;
 	
 	if (!f || (f->type == FS_NONE) || !(f->flag & (O_WRONLY|O_RDWR)))
 		return -1;
 	if (f->type == FS_PIPE)
 		return pipe_write(f->pipe, src, nbytes);
-f0108103:	e9 78 12 00 00       	jmp    f0109380 <pipe_write>
+f0108106:	e9 75 12 00 00       	jmp    f0109380 <pipe_write>
 
 	// i use only two types.
 	total = 0;
 	maxbytes = ((MAXOPBLOCKS - 4) / 2) * BLKSIZE;
 	while (total < nbytes) {
-f0108108:	31 c0                	xor    %eax,%eax
-f010810a:	eb c3                	jmp    f01080cf <file_write+0xbf>
-f010810c:	66 90                	xchg   %ax,%ax
-f010810e:	66 90                	xchg   %ax,%ax
+f010810b:	31 c0                	xor    %eax,%eax
+f010810d:	eb c1                	jmp    f01080d0 <file_write+0xc0>
+f010810f:	90                   	nop
 
 f0108110 <read_superblock>:
 
@@ -24940,7 +24935,7 @@ f0108b40:	89 7d e4             	mov    %edi,-0x1c(%ebp)
 
     if (i->type == T_DEV) {
 f0108b43:	0f 84 a7 00 00 00    	je     f0108bf0 <readi+0xd0>
-        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read))
+        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read)) 
             return -E_BAD_DEV;
         return dev_structs[i->major].read(i, dst, nbytes);
     }
@@ -24955,6 +24950,7 @@ f0108b5a:	89 fa                	mov    %edi,%edx
 f0108b5c:	01 f2                	add    %esi,%edx
 f0108b5e:	0f 82 ad 00 00 00    	jb     f0108c11 <readi+0xf1>
         return -E_BAD_OFFSET;
+
     if (offset + nbytes > i->file_siz)
         nbytes = i->file_siz - offset;
 f0108b64:	89 c1                	mov    %eax,%ecx
@@ -24965,10 +24961,10 @@ f0108b6a:	0f 43 cf             	cmovae %edi,%ecx
     for (total=0; total<nbytes; total+=rdbytes, offset+=rdbytes, dst+=rdbytes){
 f0108b6d:	31 ff                	xor    %edi,%edi
 f0108b6f:	85 c9                	test   %ecx,%ecx
-    }
 
     if ((offset > i->file_siz) || (offset + nbytes < offset))
         return -E_BAD_OFFSET;
+
     if (offset + nbytes > i->file_siz)
         nbytes = i->file_siz - offset;
 f0108b71:	89 4d e4             	mov    %ecx,-0x1c(%ebp)
@@ -24989,7 +24985,7 @@ f0108b93:	ff 33                	pushl  (%ebx)
         // yeah, we have to decide how bytes we have to read.
         rdbytes = min(nbytes-total, BLKSIZE - offset%BLKSIZE);
 f0108b95:	bb 00 02 00 00       	mov    $0x200,%ebx
-        return -E_BAD_OFFSET;
+
     if (offset + nbytes > i->file_siz)
         nbytes = i->file_siz - offset;
 
@@ -25018,8 +25014,8 @@ f0108bb8:	0f 47 d8             	cmova  %eax,%ebx
         memmove(dst, b->data + offset % BLKSIZE, rdbytes);
 f0108bbb:	53                   	push   %ebx
 f0108bbc:	03 0a                	add    (%edx),%ecx
-    if ((offset > i->file_siz) || (offset + nbytes < offset))
         return -E_BAD_OFFSET;
+
     if (offset + nbytes > i->file_siz)
         nbytes = i->file_siz - offset;
 
@@ -25037,8 +25033,8 @@ f0108bc6:	e8 45 87 ff ff       	call   f0101310 <memmove>
 f0108bcb:	8b 55 dc             	mov    -0x24(%ebp),%edx
 f0108bce:	89 14 24             	mov    %edx,(%esp)
 f0108bd1:	e8 fa e7 ff ff       	call   f01073d0 <brelse>
-    if ((offset > i->file_siz) || (offset + nbytes < offset))
         return -E_BAD_OFFSET;
+
     if (offset + nbytes > i->file_siz)
         nbytes = i->file_siz - offset;
 
@@ -25067,7 +25063,7 @@ f0108bec:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
     uint32_t rdbytes;
 
     if (i->type == T_DEV) {
-        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read))
+        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read)) 
 f0108bf0:	0f b7 40 2a          	movzwl 0x2a(%eax),%eax
 f0108bf4:	66 83 f8 09          	cmp    $0x9,%ax
 f0108bf8:	77 1e                	ja     f0108c18 <readi+0xf8>
@@ -25091,7 +25087,7 @@ f0108c0e:	5d                   	pop    %ebp
     uint32_t rdbytes;
 
     if (i->type == T_DEV) {
-        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read))
+        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read)) 
             return -E_BAD_DEV;
         return dev_structs[i->major].read(i, dst, nbytes);
 f0108c0f:	ff e0                	jmp    *%eax
@@ -25105,7 +25101,7 @@ f0108c16:	eb cc                	jmp    f0108be4 <readi+0xc4>
     uint32_t rdbytes;
 
     if (i->type == T_DEV) {
-        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read))
+        if (i->major < 0 || i->major >= NDEV || !(dev_structs[i->major].read)) 
             return -E_BAD_DEV;
 f0108c18:	b8 f7 ff ff ff       	mov    $0xfffffff7,%eax
 f0108c1d:	eb c5                	jmp    f0108be4 <readi+0xc4>
@@ -25639,7 +25635,7 @@ f0108ee6:	8b 5d e4             	mov    -0x1c(%ebp),%ebx
         if (*end)
 f0108ee9:	75 0d                	jne    f0108ef8 <namex+0xd8>
             start = end + 1;
-        if (*end == '\0' || *start == '\0')
+        if (*end == '\0' || *start == '\0') 
             return curi;
     }
 }
@@ -25653,7 +25649,7 @@ f0108eeb:	8d 65 f4             	lea    -0xc(%ebp),%esp
 f0108eee:	89 d8                	mov    %ebx,%eax
         if (*end)
             start = end + 1;
-        if (*end == '\0' || *start == '\0')
+        if (*end == '\0' || *start == '\0') 
             return curi;
     }
 }
@@ -25668,7 +25664,7 @@ f0108ef5:	8d 76 00             	lea    0x0(%esi),%esi
         curi = next;
         if (*end)
             start = end + 1;
-        if (*end == '\0' || *start == '\0')
+        if (*end == '\0' || *start == '\0') 
 f0108ef8:	80 7f 01 00          	cmpb   $0x0,0x1(%edi)
             return 0;
         }
@@ -25677,7 +25673,7 @@ f0108ef8:	80 7f 01 00          	cmpb   $0x0,0x1(%edi)
         if (*end)
             start = end + 1;
 f0108efc:	8d 77 01             	lea    0x1(%edi),%esi
-        if (*end == '\0' || *start == '\0')
+        if (*end == '\0' || *start == '\0') 
 f0108eff:	0f 85 6b ff ff ff    	jne    f0108e70 <namex+0x50>
 f0108f05:	eb e4                	jmp    f0108eeb <namex+0xcb>
     }
@@ -25729,7 +25725,7 @@ f0108f39:	e8 82 fb ff ff       	call   f0108ac0 <iunlockput>
 f0108f3e:	83 c4 10             	add    $0x10,%esp
         if (*end)
             start = end + 1;
-        if (*end == '\0' || *start == '\0')
+        if (*end == '\0' || *start == '\0') 
             return curi;
     }
 }
@@ -25743,7 +25739,7 @@ f0108f41:	8d 65 f4             	lea    -0xc(%ebp),%esp
 f0108f44:	31 c0                	xor    %eax,%eax
         if (*end)
             start = end + 1;
-        if (*end == '\0' || *start == '\0')
+        if (*end == '\0' || *start == '\0') 
             return curi;
     }
 }
@@ -25765,7 +25761,7 @@ f0108f4f:	e8 4c f8 ff ff       	call   f01087a0 <iunlock>
 f0108f54:	83 c4 10             	add    $0x10,%esp
         if (*end)
             start = end + 1;
-        if (*end == '\0' || *start == '\0')
+        if (*end == '\0' || *start == '\0') 
             return curi;
     }
 }
@@ -25779,7 +25775,7 @@ f0108f57:	8d 65 f4             	lea    -0xc(%ebp),%esp
 f0108f5a:	89 d8                	mov    %ebx,%eax
         if (*end)
             start = end + 1;
-        if (*end == '\0' || *start == '\0')
+        if (*end == '\0' || *start == '\0') 
             return curi;
     }
 }

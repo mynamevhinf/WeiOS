@@ -16,11 +16,11 @@ int wmain(int argc, char *argv[])
 		printf(1, "cannot open %s\n", argv[1]);
 		return -1;
 	}
-	if ((fd2 = open(argv[2], O_CREAT|O_WRONLY)) < 0) {
+	if ((fd2 = open(argv[2], O_CREAT|O_RDWR)) < 0) {
 		printf(1, "cannot open %s\n", argv[2]);
 		return -1;
 	}
-	while ((nbytes = read(fd1, buf, 512)) >= 0)
+	while ((nbytes = read(fd1, buf, 512)) > 0)
 		if (write(fd2, buf, nbytes) < 0)
 			break;
 	close(fd1);

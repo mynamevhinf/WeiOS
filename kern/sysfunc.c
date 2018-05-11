@@ -500,7 +500,6 @@ int exec(char *pathname, char **argv)
 		//prink("exec error: no such file -- %s\n", pathname);
 		return -1;
 	}
-
 	// now check if the head is legel!!
 	ilock(i);
 	npgdir = 0;
