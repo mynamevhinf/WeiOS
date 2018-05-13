@@ -389,7 +389,7 @@ int readi(struct inode *i, char *dst, uint32_t offset, uint32_t nbytes)
     if (offset + nbytes > i->file_siz)
         nbytes = i->file_siz - offset;
 
-    for (total=0; total<nbytes; total+=rdbytes, offset+=rdbytes, dst+=rdbytes){
+    for (total=0; total<nbytes; total+=rdbytes, offset+=rdbytes, dst+=rdbytes) {
         b = bread(i->dev, bmap(i, offset / BLKSIZE));
         // yeah, we have to decide how bytes we have to read.
         rdbytes = min(nbytes-total, BLKSIZE - offset%BLKSIZE);
@@ -525,6 +525,7 @@ static struct inode *namex(char *path, int nameiparent, char *name)
             iunlockput(curi);
             return 0;
         }
+
         iunlockput(curi);
         curi = next;
         if (*end)

@@ -23,37 +23,51 @@ void log_init(int dev)
     log_manager.size = sb.log_blks;
     log_manager.dev = dev;
     LIST_HEAD_INIT(log_manager.procs_waitting);
-    for (int i = 0; i < LOGSIZE; i++)
+    for (int i = 0; i < LOGSIZE; i++) 
     	if (!(buf_ptrs[i].data = (char *)kmalloc(BLKSIZE, __GFP_ZERO|__GFP_DMA)))
     		panic("log_init(): failed!!!\n");
+
     recover_from_log();
 }
 
 // Copy committed blocks from log to their home location
 static void keep_consistent_on_disk(int boot)
 {
-    struct buf *disk_buf;
+    struct dozenbufs *dozens;
 
+    if (log_manager.lheader.nblks == 0)
+    	return;
+
+    if (!(dozens =  dozens_init(log_manager.lheader.nblks)))
+    	panic("dozens_init() failed!!!\n");
     if (boot) {
         struct buf *log_buf;
         for (int i = 0; i < log_manager.lheader.nblks; i++) {
             // read log block
             log_buf = bread(log_manager.dev, log_manager.start + i + 1); 
             // read dst
-            disk_buf = bread(log_manager.dev, log_manager.lheader.blks_no[i]);
-            memmove(disk_buf->data, log_buf->data, BLKSIZE);
-            bwrite(disk_buf);
+            //disk_buf = bread(log_manager.dev, log_manager.lheader.blks_no[i]);
+            dozens->buf_array[i] = bread(log_manager.dev, log_manager.lheader.blks_no[i]);
+            dozens->buf_array[i]->dozen_ptr = dozens;
+            memmove(dozens->buf_array[i]->data, log_buf->data, BLKSIZE);
+            //memmove(disk_buf->data, log_buf->data, BLKSIZE);
+            //bwrite(disk_buf);
             brelse(log_buf);
-            brelse(disk_buf);
+            //brelse(disk_buf);
         }
     } else {
         for (int i = 0; i < log_manager.lheader.nblks; i++) {
-            disk_buf = bread(log_manager.dev, log_manager.lheader.blks_no[i]); // read dst
-            memmove(disk_buf->data, buf_ptrs[i].data, BLKSIZE);
-            bwrite(disk_buf);  // write dst to disk
-            brelse(disk_buf);
+            //disk_buf = bread(log_manager.dev, log_manager.lheader.blks_no[i]); // read dst
+            //memmove(disk_buf->data, buf_ptrs[i].data, BLKSIZE);
+            dozens->buf_array[i] = bread(log_manager.dev, log_manager.lheader.blks_no[i]);
+            dozens->buf_array[i]->dozen_ptr = dozens;
+            memmove(dozens->buf_array[i]->data, buf_ptrs[i].data, BLKSIZE);
+            //bwrite(disk_buf);  // write dst to disk
+            //brelse(disk_buf);
         }
     }
+    bwrite_dozens(dozens);
+    brelse_dozens(dozens);
 }
 
 // Read the log header into memory from disk. 
@@ -77,7 +91,7 @@ static void write_log_header(void)
 {
   struct buf *buf = bread(log_manager.dev, log_manager.start);
   struct log_header *lh_blk = (struct log_header *)(buf->data);
-  
+
   lh_blk->nblks = log_manager.lheader.nblks;
   for (int i = 0; i < log_manager.lheader.nblks; i++)
       lh_blk->blks_no[i] = log_manager.lheader.blks_no[i];
@@ -150,6 +164,10 @@ static void write_log_blk(void)
 {
     struct buf  *to;
     struct buf  *from;
+    struct dozenbufs *dozens;
+
+    if (!(dozens =  dozens_init(log_manager.lheader.nblks)))
+    	panic("dozens_init() failed!!!\n");
 
     // Write each modified transaction from 
     // buffer cache in-memory to the log space on-disk.
@@ -160,11 +178,10 @@ static void write_log_blk(void)
         // We have only one device in WeiOS.
         from = bread(log_manager.dev, log_manager.lheader.blks_no[i]);
         memmove(to->data, from->data, BLKSIZE);
-        from->flag &= (~B_DIRTY);
-        from->flag |= B_VALID;
-        bwrite(to);  // write the log
+        to->dozen_ptr = dozens;
+        dozens->buf_array[i] = to;
         brelse(from);
-        brelse(to);
+
         // We only copy data from cache to log area on disk.
         // Not in the right position it should be.
         // We do this job in function keep_consistent_on_disk()
@@ -174,6 +191,8 @@ static void write_log_blk(void)
     	buf_ptrs[i].blockno = to->blockno;
     	memmove(buf_ptrs[i].data, to->data, BLKSIZE);
     }
+    bwrite_dozens(dozens);
+    brelse_dozens(dozens);
 }
 
 static void commit()

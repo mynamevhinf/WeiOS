@@ -46,6 +46,22 @@ void buffer_init(void)
 	}
 }
 
+struct dozenbufs *dozens_init(int nblks)
+{
+	struct dozenbufs *dozens;
+
+    if (!(dozens = (struct dozenbufs *)kmalloc(sizeof(struct dozenbufs), 
+    									__GFP_ZERO)))
+    	panic("initialize dozens struct failed!!!\n");
+    if (!(dozens->buf_array = (struct buf **)kmalloc(
+   							  sizeof(struct buf *)*nblks, __GFP_ZERO)))
+    	panic("initialize dozens->buf_array failed!!! nblks = %d\n", nblks);
+    dozens->n_bufs = nblks;
+    dozens->n_request = nblks;
+    LIST_HEAD_INIT(dozens->waiting_for_io);
+    return dozens;
+}
+
 struct buf *getblk(uint32_t dev, uint32_t blockno)
 {
 	struct buf *b;
@@ -60,7 +76,7 @@ struct buf *getblk(uint32_t dev, uint32_t blockno)
 				continue;
 			}
 			b->flag |= B_BUSY;
-			b->owner = curproc;
+			//b->owner = curproc;
 			// i assume that every blocks in the hash table has
 			// been used by other processes, otherwise, it must
 			// be in the free_list waitting around.
@@ -86,7 +102,7 @@ struct buf *getblk(uint32_t dev, uint32_t blockno)
 			if (b->hash_node.next)
 				list_del(&b->hash_node);
 			b->flag |= B_BUSY;
-			b->owner = curproc;
+			//b->owner = curproc;
 			//if ((b->flag & (B_VALID | B_DIRTY)) == B_DIRTY) {
 				// it may block.
 			//	spin_unlock_irqrestore(&bcache.blk_cache_lk);
@@ -136,18 +152,25 @@ struct buf *breada(uint32_t dev, uint32_t blkno)
 // not delay write.
 void bwrite(struct buf *b)
 {
-	// all write operations are delayed write
-	if (b->owner != curproc)
-		return;
     b->flag &= (~B_VALID);
 	b->flag |= B_DIRTY;
 	ide_read_write(b);
 }
 
+void bwrite_dozens(struct dozenbufs *dozens)
+{
+	// Ready for write.
+    for (int j = 0; j < dozens->n_bufs; j++) {
+    	dozens->buf_array[j]->flag &= (~B_VALID);
+		dozens->buf_array[j]->flag |= B_DIRTY;
+    }
+    ide_write_dozens(dozens);
+}
+
 void bwrite_delay(struct buf *b)
 {
-	if (b->owner != curproc)
-		return;
+	//if (b->owner != curproc)
+		//return;
     b->flag &= (~B_VALID);
 	b->flag |= B_DIRTY;
 	brelse(b);
@@ -157,11 +180,9 @@ void bwrite_delay(struct buf *b)
 // the affect is the same as delayed write.
 void brelse(struct buf *b)
 {
-	if (b->owner != curproc)
-		return;
-
 	spin_lock_irqsave(&bcache.blk_cache_lk);
 	b->flag &= (~B_BUSY);
+	// I add the block just free into the front of list header.
 	if ((b->flag & (B_VALID | B_DIRTY)) == B_VALID) {
 		list_add_tail(&b->free_list_node, &bcache.free_list_head);
 		wakeup(&bcache.waiting_proc_list, &bcache.blk_cache_lk);
@@ -172,6 +193,17 @@ void brelse(struct buf *b)
 	// the block is still in hash table.
 	spin_unlock_irqrestore(&bcache.blk_cache_lk);
 }
+
+void brelse_dozens(struct dozenbufs *dozens)
+{
+	    // brelse dozens
+    for (int j = 0; j < dozens->n_bufs; j++) {
+    	brelse(dozens->buf_array[j]);
+    	dozens->buf_array[j] = 0;
+    }
+    kfree(dozens->buf_array);
+    kfree(dozens);
+} 
 
 // i assume that if balloc() call bzero(), the block will be used soon
 // so if i leave it in the cache, it is a good for system's performence.

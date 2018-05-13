@@ -324,7 +324,6 @@ int open(char *pathname, int flag)
 		if ((i->type == T_DIR) && !(flag & O_RDONLY))
 			goto open_failure;
 	}
-
 	if ((fd = fd_alloc()) < 0)
 		goto open_failure;
 	if (!(f = file_alloc()))

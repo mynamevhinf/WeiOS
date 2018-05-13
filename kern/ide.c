@@ -4,13 +4,10 @@
 #include <include/buffer.h>
 #include <include/kernel.h>
 #include <include/sysfunc.h>
-#include <include/proc.h>
 #include <include/trap.h>
 #include <include/lock.h>
 #include <include/x86.h>
 #include <include/ide.h>
-
-#include <include/stdio.h>
 
 static int slave_disk_existed;
 
@@ -33,36 +30,40 @@ static int ide_wait(int check)
 
 static void update_idequeue(struct buf *b)
 {
-    struct buf *tb;
+    struct buf *tb, *fb;
     struct list_head *list_node;
 
+    ide_manager.n_requests++;
     if (!list_empty(&ide_manager.ide_queue)) {
         // I don't care about consistency of device.
         // whatever, follow the sequence.if two same block was in the queue
         // they follow FIFO.
         tb = list_entry(ide_manager.ide_queue.next, struct buf, ide_queue_node);
         if (b->blockno > tb->blockno) {
-            list_node = ide_manager.ide_queue.next->next;
+            //list_node = ide_manager.ide_queue.next->next;
+            list_node = tb->ide_queue_node.next;
             while (list_node != &ide_manager.ide_queue) {
-                tb = list_entry(list_node, struct buf, ide_queue_node);
-                if (b->blockno < tb->blockno)
-                    break;
+                fb = list_entry(list_node, struct buf, ide_queue_node);
+                if (b->blockno < fb->blockno)
+                    break; 
                 list_node = list_node->next;
+                tb = fb;
             }
-            list_add_tail(&b->ide_queue_node, &tb->ide_queue_node);
-        } else { 
+        } else if (b->blockno < tb->blockno) { 
             list_node = ide_manager.ide_queue.prev;
             while (list_node != &ide_manager.ide_queue) {
-                tb = list_entry(list_node, struct buf, ide_queue_node);
-                if (b->blockno >= tb->blockno)
-                    break;
+                fb = list_entry(list_node, struct buf, ide_queue_node);
+                if (b->blockno <= fb->blockno) {
+                    list_add_tail(&b->ide_queue_node, &fb->ide_queue_node);
+                    return;
+                }
                 list_node = list_node->prev;
+                tb = fb;
             }
-            list_add(&b->ide_queue_node, &tb->ide_queue_node);
         }
+        list_add(&b->ide_queue_node, &tb->ide_queue_node);
     } else
-          list_add(&b->ide_queue_node, &ide_manager.ide_queue);
-    ide_manager.n_requests++;
+        list_add(&b->ide_queue_node, &ide_manager.ide_queue);
 }
 
 void ide_init(void)
@@ -109,14 +110,14 @@ static void ide_start(struct buf *b)
 void ide_intr(void)
 {
   	struct buf *b;
+    struct dozenbufs *dozens;
     struct list_head *list_node;
 
   	// First queued buffer is the active request.
-  	spin_lock_irqsave(&ide_manager.ide_lock); 
-  	
-  	if(ide_manager.n_requests == 0){
-    	spin_unlock_irqrestore(&ide_manager.ide_lock);
-    	return;
+  	spin_lock_irqsave(&ide_manager.ide_lock);  	
+  	if (ide_manager.n_requests == 0){
+    	  spin_unlock_irqrestore(&ide_manager.ide_lock);
+    	  return;
   	}
 
     // delete completed block from queue.
@@ -136,7 +137,14 @@ void ide_intr(void)
   	// it becomes valid!!!!
   	b->flag |= B_VALID;
   	b->flag &= (~B_DIRTY);
-	  wakeup(&b->waiting_for_io, &ide_manager.ide_lock);
+    if (b->dozen_ptr) {
+        dozens = b->dozen_ptr;
+        b->dozen_ptr = 0;
+        dozens->n_request--;
+        if (dozens->n_request == 0)
+            wakeup(&dozens->waiting_for_io, &ide_manager.ide_lock);
+    } else 
+	      wakeup(&b->waiting_for_io, &ide_manager.ide_lock);
 
   	// Start disk on next buf in queue.
    	if(ide_manager.n_requests != 0) {
@@ -158,7 +166,6 @@ int ide_read_write(struct buf *b)
 
   	spin_lock_irqsave(&ide_manager.ide_lock); 
     update_idequeue(b);
-
   	// Start disk if necessary.
   	if(ide_manager.n_requests == 1)
     	ide_start(b);
@@ -167,5 +174,31 @@ int ide_read_write(struct buf *b)
     while((b->flag & (B_VALID | B_DIRTY)) != B_VALID) 
         sleep(&b->waiting_for_io, &ide_manager.ide_lock);
   	spin_unlock_irqrestore(&ide_manager.ide_lock);
+    return 0;
+}
+
+int ide_write_dozens(struct dozenbufs *dozens)
+{
+    struct buf *tb;
+
+    if (dozens->n_bufs == 0 || dozens->buf_array == 0)
+        return -1;
+    if (dozens->buf_array[1]->dev && !slave_disk_existed)
+        return -1;
+
+    spin_lock_irqsave(&ide_manager.ide_lock);
+    // put all blocks into the idequeue.
+    for (int j = 0; j < dozens->n_bufs; j++)
+        update_idequeue(dozens->buf_array[j]);
+
+    if (ide_manager.n_requests == dozens->n_bufs) {
+        tb = list_entry(ide_manager.ide_queue.next, struct buf, ide_queue_node);
+        ide_start(tb);
+    }
+
+    while (dozens->n_request > 0) 
+        sleep(&dozens->waiting_for_io, &ide_manager.ide_lock);
+
+    spin_unlock_irqrestore(&ide_manager.ide_lock);
     return 0;
 }

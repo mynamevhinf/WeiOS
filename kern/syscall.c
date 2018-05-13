@@ -13,10 +13,8 @@
 #include <include/sysfunc.h>
 
 
-static int sys_puts(const char *s)
-{
-	return prink("%s", s);
-}
+#define sys_puts(s)	\
+	prink("%s", (char *)s)
 
 static int sys_printf(const char *str, va_list ap)
 {
@@ -32,15 +30,11 @@ static int sys_exit(void)
 	return 0; // nerver reache here if no bugs.
 }
 
-static int sys_wait(void)
-{
-	return wait();
-}
+#define sys_wait() 		\
+	wait()
 
-static int sys_kill(pid_t pid)
-{
-	return kill(pid);
-}
+#define sys_kill(pid)	\
+	kill((pid_t)pid)
 
 static int sys_exec(char *pathname, char **uargv)
 {
@@ -63,15 +57,8 @@ static int sys_exec(char *pathname, char **uargv)
 	return exec(pathname, argv);
 }
 
-static pid_t sys_getpid(void)
-{
-	return myproc()->pid;
-}
-
-static pid_t sys_getppid(void)
-{
-	return myproc()->ppid;
-}
+#define sys_getpid()   myproc()->pid
+#define sys_getppid()  myproc()->ppid
 
 static int sys_alarm(uint32_t alarmticks, void (*handler)())
 {
@@ -93,10 +80,8 @@ static int sys_yield(void)
 	return 0;
 }
 
-static int sys_exofork(void)
-{
-	return dup_proc_struct(0);
-}
+#define sys_exofork() 	\
+	dup_proc_struct(0)
 
 static int sys_set_proc_trapframe(pid_t pid, struct trapframe *tf)
 {
@@ -109,8 +94,8 @@ static int sys_set_proc_trapframe(pid_t pid, struct trapframe *tf)
 	*(p->tf) = *tf;
 
 	return 0;
-
 }
+
 // useless
 static int sys_set_proc_pgfault_handler(pid_t pid, void *func)
 {
@@ -122,32 +107,21 @@ static int sys_set_proc_pgfault_handler(pid_t pid, void *func)
 	return 0;
 }
 
-static int sys_page_alloc(pid_t pid, void *va, int perm)
-{
-	return user_page_alloc(pid, va, perm); 
-}
+#define sys_page_alloc(pid, va, perm)	\
+	user_page_alloc((pid_t)pid, (void *)va, (int)perm)
 
-static int sys_page_map(pid_t srcpid, void *srcva,
-	     				pid_t dstpid, void *dstva, int perm)
-{
-	return user_page_map(srcpid, srcva, dstpid, dstva, perm);
-}
+#define sys_page_map(srcpid, srcva, dstpid, dstva, perm)	\
+	user_page_map((pid_t)srcpid, (void *)srcva, (pid_t)dstpid, (void *)dstva, (int)perm)
 
-static int sys_page_unmap(pid_t pid, void *va)
-{
-	return user_page_upmap(pid, va);
-}
+#define sys_page_unmap(pid, va)	\
+	user_page_upmap((pid_t)pid, (void *)va)
 
-static int sys_fork(void)
-{
-	return clone(CLONE_FORK);
-}
+#define sys_fork()	\
+	clone(CLONE_FORK)
 
-static int sys_ipc_try_send(pid_t pid, uint32_t value, 
-							void *srcva, int32_t perm)
-{
-	return ipc_try_send(pid, value, srcva, perm);
-}
+#define sys_ipc_try_send(pid, value, srcva, perm)	\
+	ipc_try_send((pid_t)pid, (uint32_t)value, (void *)srcva, (int32_t )perm)
+
 
 static int ipc_send(pid_t to_proc, uint32_t val, void *pg, int32_t perm)
 {
@@ -163,90 +137,58 @@ static int ipc_send(pid_t to_proc, uint32_t val, void *pg, int32_t perm)
 	return 0;
 }
 
-static int sys_ipc_recv(void *pg)
-{
-	return ipc_recv(pg);
-}
+#define sys_ipc_recv(pg)	\
+	ipc_recv((void *)pg)
 
-static int sys_sbrk(int n)
-{
-	return (int)sbrk(n);
-}
+#define sys_sbrk(n)		\
+	(int)sbrk(n)
 
-static int sys_brk(uint32_t heap_break)
-{
-	return brk(heap_break);
-}
+#define sys_brk(heap_break)	\
+	brk((uint32_t )heap_break)
 
 static int sys_pipe(int fd[2])
 {
 	return pipe(fd);
 }
 
-static int sys_dup(int fd)
-{
-	return dup(fd);
-}
+#define sys_dup(fd)		\
+	dup((int)fd)
 
-static int sys_dup2(int oldfd, int newfd)
-{
-	return dup2(oldfd, newfd);
-}
+#define sys_dup2(oldfd, newfd)	\
+	dup2((int)oldfd, (int)newfd)
 
-static int sys_read(int fd, char *des, uint32_t nbytes)
-{
-	return read(fd, des, nbytes);
-}
+#define sys_read(fd, des, nbytes)	\
+	read((int)fd, (char *)des, (uint32_t)nbytes)
 
-static int sys_write(int fd, char *src, uint32_t nbytes)
-{
-	return write(fd, src, nbytes);
-}
+#define sys_write(fd, src, nbytes)	\
+	write((int)fd, (char *)src, (uint32_t)nbytes)
 
-static int sys_close(int fd)
-{
-	return close(fd);
-}
+#define sys_close(fd)	\
+	close((int)fd)
 
-static int sys_fstat(int fd, struct stat *sbuf)
-{
-	return fstat(fd, sbuf);
-}
+#define sys_fstat(fd, sbuf)		\
+	fstat((int)fd, (struct stat *)sbuf)
 
-static int sys_link(char *oldpname, char *newpname)
-{
-	return link(oldpname, newpname);
-}
+#define sys_link(oldpname, newpname)	\
+	link((char *)oldpname, (char *)newpname)
 
-static int sys_unlink(char *pathname)
-{
-	return unlink(pathname);
-}
+#define sys_unlink(pathname)	\
+	unlink((char *)pathname)
 
-static int sys_open(char *pathname, int flag)
-{
-	return open(pathname, flag);
-}
+#define sys_open(pathname, flag)	\
+	open((char *)pathname, (int)flag)
 
-static int sys_mknod(char *pathname, ushort major, ushort minor)
-{
-	return mknod(pathname, major, minor);
-}
+#define sys_mknod(pathname, major, minor)	\
+	mknod((char *)pathname, (ushort)major, (ushort)minor)
 
-static int sys_mkdir(char *pathname)
-{
-	return mkdir(pathname);
-}
+#define sys_mkdir(pathname)	\
+	mkdir((char *)pathname)
 
-static int sys_chdir(char *pathname)
-{
-	return chdir(pathname);
-}
+#define sys_chdir(pathname)		\
+	chdir((char *)pathname)
 
-static int sys_ls(const char *str)
-{
-	return ls_test(str);
-}
+#define sys_ls(str)		\
+	ls_test((const char *)str)
 
 int32_t syscall(uint32_t syscallno, uint32_t a1, 
 				uint32_t a2, uint32_t a3, 

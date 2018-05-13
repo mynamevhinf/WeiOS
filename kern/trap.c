@@ -186,12 +186,24 @@ void trap(struct trapframe *tf)
     struct proc *p = myproc();
 
     //It's not the time to uncomment it.
-    if (!(tf->cs & USER_DPL) && tf->trap_no <= T_SIMDERR) {
+    if (!(tf->cs & USER_DPL) && (tf->trap_no <= T_SIMDERR)) {
+        prink_trapframe(tf);
         monitor(tf);
         panic("Int occurs in kernel mode!!!\n");
     }
-    if (tf && tf->trap_no != (IRQ_STARTED+IRQ_TIMER))
+
     switch (tf->trap_no) {
+        case T_BRKPOINT:
+            monitor(tf);
+            break;
+        case T_PGFAULT:
+            page_fault_handler(tf);
+            break;
+        case T_SYSCALL:
+            tf->normal_regs.eax = syscall(tf->normal_regs.eax, tf->normal_regs.edx, 
+                                        tf->normal_regs.ecx, tf->normal_regs.ebx, 
+                                        tf->normal_regs.edi, tf->normal_regs.esi);
+            break;
         case (IRQ_STARTED + IRQ_TIMER):
             spin_lock_irqsave(&jiffs_lock);
             jiffs++;
@@ -220,18 +232,6 @@ void trap(struct trapframe *tf)
         case (IRQ_STARTED + IRQ_IDE):
             ide_intr();
             irq_eoi();
-            break;
-        case T_SYSCALL:
-            tf->normal_regs.eax = syscall(tf->normal_regs.eax, tf->normal_regs.edx, 
-                                        tf->normal_regs.ecx, tf->normal_regs.ebx, 
-                                        tf->normal_regs.edi, tf->normal_regs.esi);
-            break;
-        case T_BRKPOINT:
-            monitor(tf);
-            break;
-        case T_PGFAULT:
-            //prink_trapframe(tf);
-            page_fault_handler(tf);
             break;
         default:
             prink_trapframe(tf);

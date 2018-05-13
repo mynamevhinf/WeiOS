@@ -47,6 +47,12 @@ void sleep(struct list_head *sleep_list, struct spinlock *lk)
 		spin_lock_irqsave(&proc_manager.proc_table_lock);
 		spin_unlock_irqrestore(lk);
 	}
+
+	//debug
+	//uint32_t ebp;
+	//asm volatile ("movl %%ebp, %0":"=r"(ebp));
+	//prink("eip = %p\n", *((uint32_t *)ebp + 1));
+
 	p->status = SLEEPING;
 	p->sleep_start_jiffs = jiffs;
 	//del_proc_fron_queue(p);

@@ -13,6 +13,7 @@
 &#160; &#160; &#160; &#160;运行: scripts/run_bochs.sh<br>
 &#160; &#160; &#160; &#160;组合技能: scripts/rebootWeiOS.sh<br>
 ![image](https://github.com/mynamevhinf/WeiOS/blob/master/images/Selection_003.png)
+<br><br>
 
 韦清福的内核开发手册
 ======

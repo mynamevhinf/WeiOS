@@ -33,6 +33,7 @@ void ide_init(void);
 void ide_intr(void);
 // Start the request for block b, caller must hold the lock.
 int ide_read_write(struct buf *b);
+int ide_write_dozens(struct dozenbufs *dozens);
 
 #endif
 
