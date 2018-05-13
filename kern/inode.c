@@ -498,6 +498,7 @@ static struct inode *namex(char *path, int nameiparent, char *name)
     char *start, *end;
     struct inode *curi, *next;
 
+
     if (*path == '/') {
         curi = iget(ROOTDEV, ROOTINO);
         if (strlen(path) == 1)

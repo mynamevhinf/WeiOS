@@ -209,19 +209,6 @@ void exit(void)
 	// free all space it occupied.
 	// only user space. dont care about kernel stack.
 	proc_free(curproc);
-	if (curproc->ppid)
-		pid2proc(curproc->ppid, &p, 0);
-	else 
-		p = rootproc;
-	if (p->wait_for_child) 
-		wakeup(&p->sleep_alone, &proc_manager.proc_table_lock);
-		// implicitly wake up.
-		//list_del(&p->kinds_list);
-		//p->sleep_avg += (jiffs - p->sleep_start_jiffs);
-		//p->sleep_start_jiffs = 0;
-		//p->status = RUNNABLE;
-		//p->wait_for_child = 0;
-		//add_proc_to_queue(mycpu()->run_queue, p);
 	spin_unlock_irqrestore(&proc_manager.proc_table_lock);
 	
 	// free all file struct it used
@@ -233,6 +220,12 @@ void exit(void)
 	curproc->n_opfiles = 0;
 	
 	spin_lock_irqsave(&proc_manager.proc_table_lock);
+	if (curproc->ppid)
+		pid2proc(curproc->ppid, &p, 0);
+	else 
+		p = rootproc;
+	if (p->wait_for_child) 
+		wakeup(&p->sleep_alone, &proc_manager.proc_table_lock);
 	sched();
     spin_unlock_irqrestore(&proc_manager.proc_table_lock);
 }
@@ -421,7 +414,6 @@ int clone(uint32_t cflg)
 	list_add_tail(&son_p->siblings, &curproc->children); 
 	add_proc_to_queue(mycpu()->run_queue, son_p);   
     spin_unlock_irqrestore(&proc_manager.proc_table_lock);
-
 	return son_p->pid;
 
 cow_fork_failed:
@@ -503,16 +495,14 @@ int exec(char *pathname, char **argv)
 		// i have already call iunlockput() in name if failed.
 		// so it is no need to do it again.
 		end_transaction();
-		//prink("exec error: no such file -- %s\n", pathname);
 		return -1;
 	}
 	// now check if the head is legel!!
 	ilock(i);
 	npgdir = 0;
-	if (readi(i, (char *)&elfh, 0, sizeof(struct Elf32_Ehdr)) < 0) {
-		prink("exec error: cannot load the program!\n");
+	if (readi(i, (char *)&elfh, 0, sizeof(struct Elf32_Ehdr)) < 0)
 		goto exec_failure;
-	}
+	
 	// In real Unix-like system, print no imformation.so i follow them.
 	if (elfh.e_magic != ELF_MAGIC)
 		goto exec_failure;
@@ -547,8 +537,9 @@ int exec(char *pathname, char **argv)
 
 	// Now we deal with the stack.in Unix-like OS, when calling exec(), system
 	// alloc a new stack for process, I have to follow it.
-	if (!(Pinfo = page_alloc(ALLOC_ZERO)))
+	if (!(Pinfo = page_alloc(ALLOC_ZERO))) 
 		goto exec_failure;
+	
 	if (page_insert(npgdir, Pinfo, (void *)USTACKBOTTOM, PTE_USTK) < 0) {
 		page_decrease_ref(Pinfo);
 		goto exec_failure;
@@ -593,7 +584,6 @@ int exec(char *pathname, char **argv)
 	pgdir_free(opgdir);
 	page_remove(opgdir, (void *)(KSTACKTOP - KSTACKSIZE));
 	page_decrease_ref(va2page((uint32_t)opgdir));
-	
 	return 0;
 
 exec_failure:

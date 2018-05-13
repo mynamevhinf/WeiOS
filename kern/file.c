@@ -76,7 +76,7 @@ void file_close(struct file *f)
 	list_add(&f->flist_node, &ftable.flist_head);
 	spin_unlock_irqrestore(&ftable.flk);
 
-	if (f->type == FS_NONE)
+	if (ftmp.type == FS_NONE)
 		return ;
 
 	if (ftmp.type != FS_PIPE) {

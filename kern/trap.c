@@ -26,32 +26,33 @@ struct pseudo_desc gdt_desc = {sizeof(single_cpu.gdt)-1, (uint32_t)(single_cpu.g
 struct gatedesc idt[256];
 struct pseudo_desc idt_desc = {sizeof(idt)-1, (uint32_t)idt};
 
+// The strings follow are copied from pdos.csail.mit.edu/**/s09_01.html
+static const char * const excnames[] = {
+    "Divide error",
+    "Debug exceptions",
+    "Non-Maskable Interrupt",
+    "Breakpoint(one-byte INT 3 instruction)",
+    "Overflowi(INT0 instruction)",
+    "Bounds check(BOUND instruction)",
+    "Invalid Opcode",
+    "Coprocessor not available",
+    "Double Fault",
+    "Coprocessor Segment Overrun(Reserved)",
+    "Invalid TSS",
+    "Segment Not Present",
+    "Stack exception",
+    "General Protection",
+    "Page Fault",
+    "trap 15(Reserved)",
+    "x87 FPU Floating-Point Error",
+    "Alignment Check",
+    "Machine-Check",
+    "SIMD Floating-Point Exception"
+};
+
+
 static const char *trapname(int trap_no)
 {
-    // The strings follow are copied from pdos.csail.mit.edu/**/s09_01.html
-	static const char * const excnames[] = {
-		"Divide error",
-		"Debug exceptions",
-		"Non-Maskable Interrupt",
-		"Breakpoint(one-byte INT 3 instruction)",
-		"Overflowi(INT0 instruction)",
-		"Bounds check(BOUND instruction)",
-		"Invalid Opcode",
-		"Coprocessor not available",
-		"Double Fault",
-		"Coprocessor Segment Overrun(Reserved)",
-		"Invalid TSS",
-		"Segment Not Present",
-		"Stack exception",
-		"General Protection",
-		"Page Fault",
-		"trap 15(Reserved)",
-		"x87 FPU Floating-Point Error",
-		"Alignment Check",
-		"Machine-Check",
-		"SIMD Floating-Point Exception"
-	};
-
 	if (trap_no >= 0 && trap_no < ARRAY_SIZE(excnames))
 		return excnames[trap_no];
 	if (trap_no == T_SYSCALL)
@@ -193,6 +194,7 @@ void trap(struct trapframe *tf)
     }
 
     switch (tf->trap_no) {
+        case T_DEBUG:
         case T_BRKPOINT:
             monitor(tf);
             break;
@@ -234,8 +236,8 @@ void trap(struct trapframe *tf)
             irq_eoi();
             break;
         default:
-            prink_trapframe(tf);
-            monitor(tf);
+            prink("%s\n", excnames[tf->trap_no]);
+            myproc()->killed = 1;
             break;
     }
 

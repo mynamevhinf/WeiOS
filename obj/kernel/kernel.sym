@@ -1,7 +1,7 @@
 f0100000 .text
 f010a8c0 .rodata
-f010bb6c .stab
-f010bb6d .stabstr
+f010bb4c .stab
+f010bb4d .stabstr
 f010c000 .data
 f010fbc0 .bss
 00000000 .debug_line
@@ -50,11 +50,11 @@ f010f350 first_proc.1789
 00000000 sysfunc.c
 f0102f20 wakeup1
 00000000 trap.c
-f010b620 excnames.1854
+f010b600 excnames
 00000000 time.c
 f010ffe0 sys_time
-f010b740 months
-f010b770 days_of_week
+f010b720 months
+f010b750 days_of_week
 00000000 buddy.c
 00000000 slab.c
 f0105d90 kmem_free_page
@@ -86,7 +86,7 @@ f0109810 fd_alloc
 f0109860 creat
 00000000 syscall.c
 f0102380 proc_free
-f0104340 ipc_recv
+f0104320 ipc_recv
 f0105ae0 __free_rerserved_page
 f01083a0 file_write
 f01013f0 safestrcpy
@@ -100,7 +100,7 @@ f0102e60 yield
 f0104c66 t_tss
 f0105270 buffered_rmqueue
 f0102b40 task_timeslice
-f01043b0 prink_trapframe
+f0104390 prink_trapframe
 f0106aa0 page_insert
 f0113a60 jiffs_lock
 f01003f0 compatible_console_read
@@ -108,7 +108,7 @@ f01072b0 buffer_init
 f0104d49 trapsret
 f0100b10 kbd_init
 f0102920 del_proc_fron_queue
-f01037a0 user_page_upmap
+f0103790 user_page_upmap
 f01025d0 proc_create
 f0102df0 sched
 f0101310 memmove
@@ -164,7 +164,7 @@ f01019a0 special_sli
 f0109410 stati
 f010fbbe _binary_initprocess_end
 f0101430 lowercase
-f01045a0 gdt_init
+f0104580 gdt_init
 f01140a0 log_manager
 f010f320 monitor_commands
 f0101b80 sleep_lock
@@ -212,7 +212,7 @@ f010a200 chdir
 f0101b00 spin_unlock_irqrestore
 f0104d14 irq_err
 f010c000 kernstack
-f0103d30 exec
+f0103d20 exec
 f010a8b4 etext
 f0104f00 time_msec
 f0101960 special_cli
@@ -231,7 +231,7 @@ f0104d0e irq_res15
 f01028a0 add_proc_to_queue
 f01010f0 strncmp
 f0101a10 spinlock_init
-f0103800 dup_proc_struct
+f01037f0 dup_proc_struct
 f01011a0 strncpy
 f0109e80 unlink
 f01142ac ftable
@@ -241,7 +241,7 @@ f0107010 ide_intr
 f0105970 __get_free_page
 f01014c0 panic
 f0102ea0 forkret
-f0103610 user_page_alloc
+f0103600 user_page_alloc
 f0101390 memcmp
 f0111e60 cga_mem
 f0100000 _entry
@@ -252,12 +252,12 @@ f01084a0 read_superblock
 f0114330 sb
 f0103020 lastest_eip
 f0104d2d alltraps
-f01036c0 user_page_map
+f01036b0 user_page_map
 f0100320 cga_puts
-f0103bb0 sbrk
+f0103ba0 sbrk
 f0100910 kbd_get_data
 f0101c10 holding_sleeplock
-f0104840 page_fault_handler
+f0104820 page_fault_handler
 f0104cf0 irq_res10
 f01000f0 cga_clear
 f0108b80 iupdate
@@ -265,7 +265,7 @@ f0101a70 spin_lock_irqsave
 f01012e0 memset
 f0104c76 t_stack
 f0100030 main
-f01041e0 ipc_try_send
+f01041c0 ipc_try_send
 f01055c0 __alloc_pages
 f0107f80 log_write
 f0104c10 t_debug
@@ -281,7 +281,7 @@ f0104c2e t_oflow
 f0104d1a t_syscall
 f01068d0 page_free
 f01120c0 rootproc
-f0104960 trap
+f0104940 trap
 f01010a0 strcmp
 f0113260 idt
 f0109b00 dup
@@ -336,7 +336,7 @@ f0100720 console_getc
 f0106c40 user_mem_assert
 f0101b50 sleeplock_init
 f0101bd0 sleep_unlock
-f0103c90 brk
+f0103c80 brk
 f0113a6c jiffs
 f0108820 inode_init
 f0106b70 user_mem_check
@@ -346,12 +346,12 @@ f0104ca0 t_align
 f0101070 strlen
 000007c0 _binary_initprocess_size
 f010a090 open
-f0103ad0 clone
+f0103ac0 clone
 f01082b0 file_stat
 f0106940 pgdir_walk
 f0106f80 ide_init
 f01000b0 cmos_read
-f0104680 trap_init
+f0104660 trap_init
 f0101490 prink
 f01012a0 strchr
 f0113ca0 normal_caches
@@ -369,7 +369,7 @@ f0105990 get_zeroed_page
 f0114074 pages
 f010a1b0 mkdir
 f0107d30 begin_transaction
-f01039b0 cow_fork
+f01039a0 cow_fork
 f0101cb0 proc_init
 f0109cd0 close
 f0101870 monitor

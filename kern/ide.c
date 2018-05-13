@@ -125,7 +125,6 @@ void ide_intr(void)
     b = list_entry(list_node, struct buf, ide_queue_node);
     list_del(list_node);
     ide_manager.n_requests--;
-	  
   	// Read data if needed.
   	if(!(b->flag & B_DIRTY) && !ide_wait(1))
     	  insl(IDE_DATA_PORT, b->data, BLKSIZE / 4);
@@ -181,9 +180,11 @@ int ide_write_dozens(struct dozenbufs *dozens)
 {
     struct buf *tb;
 
-    if (dozens->n_bufs == 0 || dozens->buf_array == 0)
+    if (dozens->n_bufs == 0)
         return -1;
-    if (dozens->buf_array[1]->dev && !slave_disk_existed)
+    if (dozens->buf_array == 0 || dozens->buf_array[0] == 0)
+        return -1;
+    if (dozens->buf_array[0]->dev && !slave_disk_existed)
         return -1;
 
     spin_lock_irqsave(&ide_manager.ide_lock);

@@ -69,10 +69,9 @@ void runcmd(struct cmd *cmd)
     struct pipecmd *pcmd;
     struct redircmd *rcmd;
     struct backcmd *bcmd;
-
     if(!cmd)
         exit();
-    
+
     switch (cmd->type) {
         case ' ':
             ecmd = (struct execcmd *)cmd;
