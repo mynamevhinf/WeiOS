@@ -31,9 +31,7 @@ static RBNode MallocSearch(RBTree T, uint32_t key)
     if (left)
         return Ty;
     // left == 0
-    if ((Tx = RBNodeSucceeder(T, Ty)) != &T->nil)
-        return Tx;
-    return &T->nil;
+    return RBNodeSucceeder(T, Ty);
 }
 
 void *malloc(uint32_t size)
