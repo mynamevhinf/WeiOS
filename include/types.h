@@ -30,6 +30,8 @@ typedef uint32_t        uintptr_t;
 typedef uint32_t 		pid_t;
 typedef uint32_t 		ppid_t;
 
+#define NULL            0
+
 // Used for buddy and slab
 typedef ushort gfp_t;
 

@@ -1,74 +1,131 @@
 #include <include/types.h>
 #include <include/user.h>
+#include <include/kernel.h>
+#include <include/malloc.h>
+#include <include/krbtree.h>
 
-static Header  base;
-static Header *free_list;
+struct rbtree mm_rbtree;
+struct list_head list_head;
 
-static Header *more_core(uint32_t n_units)
+// Unfinished
+static RBNode MallocSearch(RBTree T, uint32_t key)
 {
-	char *p;
-	Header *hp;
+    int left;       // 1 - left son, 0 - right son
+    RBNode Ty;
+    RBNode Tx = T->root;
+    
+    if (T->root == &T->nil)
+        return &T->nil;
+    while (Tx != &T->nil) {
+        Ty = Tx;
+        if (key > Tx->key) {
+            left = 0;
+            Tx = Tx->right;
+        } else if (key < Tx->key) {
+            left = 1;
+            Tx = Tx->left;
+        } else
+            return Tx; 
+    }
 
-	if (n_units < PGSIZE)
-		n_units = PGSIZE;
-	if ((p = sbrk(n_units * sizeof(Header))) == (char *)-1)
-		return 0;
-	hp = (Header *)p;
-	hp->exist.size = n_units;
-	free((void *)(hp + 1));
-	return free_list;
+    if (left)
+        return Ty;
+    // left == 0
+    if ((Tx = RBNodeSucceeder(T, Ty)) != &T->nil)
+        return Tx;
+    return &T->nil;
 }
 
-void *malloc(size_t nbytes)
+void *malloc(uint32_t size)
 {
-	uint32_t  n_units;
-	Header *ptr, *prev_ptr;
+    RBNode trb;
+    uint32_t tsize;
+    struct mm_node *MN, *SMN;
 
-	// How many Header objects? -- n_units
-	n_units = (nbytes + sizeof(Header) - 1) / sizeof(Header) + 1;
-	if ((prev_ptr = free_list) == 0) {
-		prev_ptr = &base;
-		free_list = prev_ptr;
-		base.exist.ptr = free_list;
-		base.exist.size = 0;
-	}
-	for (ptr = prev_ptr->exist.ptr; ; prev_ptr = ptr, ptr = ptr->exist.ptr) {
-		if (ptr->exist.size >= n_units) {
-			if (ptr->exist.size == n_units)
-				prev_ptr->exist.ptr = ptr->exist.ptr;
-			else {
-				ptr->exist.size -= n_units;
-				ptr += ptr->exist.size;
-				ptr->exist.size = n_units;
-			}
-			free_list = prev_ptr;
-			return (void *)(ptr + 1);
-		}
-		if (ptr == free_list)
-			if (!(ptr = more_core(n_units)))
-				return 0;
-	}
+    static int firsttime = 1;
+    if (firsttime) {
+        rbtree_init(&mm_rbtree);
+        LIST_HEAD_INIT(list_head);
+        firsttime = 0;
+    }
+
+Search:
+    if ((trb = MallocSearch(&mm_rbtree, size)) != &mm_rbtree.nil) {
+        RBTreeDeleteNode(&mm_rbtree, trb);  // Delete the node from tree.
+        MN = container_of(trb, struct mm_node, rb);
+        if ((size+MMSIZE) < trb->key) {
+            SMN = (struct mm_node *)((char *)(MN + 1) + size); 
+            SMN->busy = 0;
+            rbnode_init(&mm_rbtree, &SMN->rb, trb->key-size-MMSIZE, RED);
+            list_add(&SMN->list_node, &MN->list_node);
+            RBTreeInsert(&mm_rbtree, &SMN->rb);
+            trb->key -= (SMN->rb.key + MMSIZE);
+        }
+        MN->busy = 1;
+        return (void *)(MN + 1);
+    }
+
+    tsize = ROUNDUP(size+MMSIZE, PGSIZE);
+    if (!(MN = (struct mm_node *)sbrk(tsize))) 
+        return NULL;
+    MN->busy = 0;
+    rbnode_init(&mm_rbtree, &MN->rb, tsize-MMSIZE, RED);
+    list_add_tail(&MN->list_node, &list_head);
+    RBTreeInsert(&mm_rbtree, &MN->rb);
+    goto Search;
 }
 
-void free(void *fptr)
+struct mm_node *find_siblings(struct mm_node *MN)
 {
-	Header *bptr, *ptr;
+    struct mm_node *SMN;
+    struct list_head *LN;
 
-	bptr = (Header *)fptr - 1;
-	for (ptr = free_list; !(bptr > ptr && bptr < ptr->exist.ptr); ptr = ptr->exist.ptr)
-		if (ptr >= ptr->exist.ptr && (bptr > ptr || bptr < ptr->exist.ptr))
-			break;
-	if (bptr + bptr->exist.size == ptr->exist.ptr) {
-		bptr->exist.size += ptr->exist.size;
-		bptr->exist.ptr = ptr->exist.ptr->exist.ptr;
-	} else
-		bptr->exist.ptr = ptr->exist.ptr;
-	
-	if (ptr + ptr->exist.size == bptr) {
-		ptr->exist.size += bptr->exist.size;
-		ptr->exist.ptr = bptr->exist.ptr;
-	} else
-		ptr->exist.ptr = bptr;
+    // left first
+    LN = MN->list_node.prev;
+    if (LN != &list_head) {
+        SMN = container_of(LN, struct mm_node, list_node); 
+        if (IS_LEFT_SIBLING(MN, SMN) && (SMN->busy == 0))
+            return SMN;
+    }
 
-	free_list = ptr;
+    // right next
+    LN = MN->list_node.next;
+    if (LN != &list_head) {
+        SMN = container_of(LN, struct mm_node, list_node); 
+        if (IS_RIGHT_SIBLING(MN, SMN) && (SMN->busy == 0))
+            return SMN;
+    }
+
+    return NULL;
+}
+
+void free(void *ptr)
+{
+    struct mm_node *MN, *SMN;
+
+    // MN->rb is not in the red-black tree now.
+    MN = (struct mm_node *)ptr - 1;
+    while ((SMN = find_siblings(MN))) {
+        // Delete SMN->rb_node from tree.
+        RBTreeDeleteNode(&mm_rbtree, &SMN->rb);
+        if (MN < SMN) {
+            // Delete it from double link list.
+            list_del(&SMN->list_node); 
+            MN->busy = 0;
+            MN->rb.color = RED;
+            MN->rb.key += (MMSIZE + SMN->rb.key);
+            RBTreeInsert(&mm_rbtree, &MN->rb); 
+        } else {
+            list_del(&MN->list_node); 
+            SMN->rb.color = RED; 
+            SMN->rb.key += (MMSIZE + MN->rb.key);
+            RBTreeInsert(&mm_rbtree, &SMN->rb); 
+            MN = SMN;
+        }
+    }
+
+    if (MN->busy) {
+        MN->busy = 0;
+        RBTreeInsert(&mm_rbtree, &MN->rb); 
+    }
 }

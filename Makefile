@@ -76,8 +76,12 @@ kernel: $(OBJS) entry.o initprocess kernel.ld
 entry.o: kern/entry.S
 	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -c kern/entry.S
 
-ULIB = user/uprintf.o user/ustring.o user/usys.o user/umalloc.o
+ULIB = user/uprintf.o user/ustring.o user/usys.o
+SHELLLIB = $(ULIB) user/umalloc.o lib/krbfunc.o
 
+_sh: uentry.o user/sh.o $(SHELLLIB)
+	$(LD) $(LDFLAGS) -N -e _ustart -Ttext 0x08048000 -o $@ $^
+	$(OBJDUMP) -S $@ > $*.asm
 _%: uentry.o user/%.o $(ULIB)
 	$(LD) $(LDFLAGS) -N -e _ustart -Ttext 0x08048000 -o $@ $^
 	$(OBJDUMP) -S $@ > $*.asm

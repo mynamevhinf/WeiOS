@@ -1,4 +1,5 @@
 #include <include/types.h>
+#include <include/malloc.h>
 #include <include/user.h>
 
 #define MAXARGS   10
