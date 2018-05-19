@@ -26,7 +26,7 @@ int wmain(void)
   
     while (1) {
         dpid = wait();
-        printf(1, "pid = %u died!!!\n\n", dpid);
+        printf(1, "pid = %u died!!!\n", dpid);
     }
 
   	return 0;

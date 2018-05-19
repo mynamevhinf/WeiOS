@@ -1398,7 +1398,7 @@ struct cmd *parseexec(char **ps, char *es)
  80487dd:	56                   	push   %esi
  80487de:	50                   	push   %eax
  80487df:	e8 0c ff ff ff       	call   80486f0 <parseredirs>
-    while(!peek(ps, es, "|")){
+    while(!peek(ps, es, "|&")){
  80487e4:	83 c4 10             	add    $0x10,%esp
     
     ret = execcmd();
@@ -1407,7 +1407,7 @@ struct cmd *parseexec(char **ps, char *es)
     argc = 0;
     ret = parseredirs(ret, ps, es);
  80487e7:	89 45 d4             	mov    %eax,-0x2c(%ebp)
-    while(!peek(ps, es, "|")){
+    while(!peek(ps, es, "|&")){
  80487ea:	eb 17                	jmp    8048803 <parseexec+0x43>
  80487ec:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
             panic("syntax error!!!\n");
@@ -1428,7 +1428,7 @@ struct cmd *parseexec(char **ps, char *es)
 
     argc = 0;
     ret = parseredirs(ret, ps, es);
-    while(!peek(ps, es, "|")){
+    while(!peek(ps, es, "|&")){
  8048803:	83 ec 04             	sub    $0x4,%esp
  8048806:	68 94 a0 04 08       	push   $0x804a094
  804880b:	57                   	push   %edi
@@ -1465,7 +1465,7 @@ void panic(const char *s)
     exit();
  8048843:	e8 d8 09 00 00       	call   8049220 <exit>
  8048848:	83 c4 10             	add    $0x10,%esp
-    while(!peek(ps, es, "|")){
+    while(!peek(ps, es, "|&")){
         if ((tok= gettoken(ps, es, &q, &eq)) == 0)
             break;
         if (tok != 'a') 
@@ -1479,7 +1479,7 @@ void panic(const char *s)
         argc++;
         if(argc >= MAXARGS)
  804885c:	83 c4 10             	add    $0x10,%esp
-    while(!peek(ps, es, "|")){
+    while(!peek(ps, es, "|&")){
         if ((tok= gettoken(ps, es, &q, &eq)) == 0)
             break;
         if (tok != 'a') 
@@ -1558,7 +1558,7 @@ struct cmd *parsepipe(char **ps, char *es)
     cmd = parseexec(ps, es);
  80488c9:	89 c7                	mov    %eax,%edi
     if (peek(ps, es, "|")) {
- 80488cb:	68 94 a0 04 08       	push   $0x804a094
+ 80488cb:	68 97 a0 04 08       	push   $0x804a097
  80488d0:	56                   	push   %esi
  80488d1:	53                   	push   %ebx
  80488d2:	e8 49 fd ff ff       	call   8048620 <peek>
@@ -1666,7 +1666,7 @@ struct cmd *parseline(char **ps, char *es)
     cmd = parsepipe(ps, es);
     while (peek(ps, es, "&")) {
  8048958:	83 ec 04             	sub    $0x4,%esp
- 804895b:	68 96 a0 04 08       	push   $0x804a096
+ 804895b:	68 95 a0 04 08       	push   $0x804a095
  8048960:	56                   	push   %esi
  8048961:	53                   	push   %ebx
  8048962:	e8 b9 fc ff ff       	call   8048620 <peek>
@@ -1734,7 +1734,7 @@ void panic(const char *s)
 {
     printf(stderr, s);
  80489bb:	83 ec 08             	sub    $0x8,%esp
- 80489be:	68 98 a0 04 08       	push   $0x804a098
+ 80489be:	68 99 a0 04 08       	push   $0x804a099
  80489c3:	6a 02                	push   $0x2
  80489c5:	e8 d6 02 00 00       	call   8048ca0 <printf>
     exit();
@@ -1863,7 +1863,7 @@ int forkv(void)
                 printf(stderr, "connot cd %s\n", buf + icd);
  8048a9b:	83 ec 04             	sub    $0x4,%esp
  8048a9e:	53                   	push   %ebx
- 8048a9f:	68 ab a0 04 08       	push   $0x804a0ab
+ 8048a9f:	68 ac a0 04 08       	push   $0x804a0ac
  8048aa4:	6a 02                	push   $0x2
  8048aa6:	e8 f5 01 00 00       	call   8048ca0 <printf>
  8048aab:	83 c4 10             	add    $0x10,%esp
@@ -5292,8 +5292,8 @@ int usyscall(uint32_t syscallno, uint32_t a1,
  804956f:	90                   	nop
 
 08049570 <malloc>:
-        return Tx;
-    return &T->nil;
+    // left == 0
+    return RBNodeSucceeder(T, Ty);
 }
 
 void *malloc(uint32_t size)
@@ -5311,8 +5311,8 @@ void *malloc(uint32_t size)
     static int firsttime = 1;
     if (firsttime) {
  8049579:	8b 35 c0 ae 04 08    	mov    0x804aec0,%esi
-        return Tx;
-    return &T->nil;
+    // left == 0
+    return RBNodeSucceeder(T, Ty);
 }
 
 void *malloc(uint32_t size)
@@ -5325,7 +5325,7 @@ void *malloc(uint32_t size)
     static int firsttime = 1;
     if (firsttime) {
  8049582:	85 f6                	test   %esi,%esi
- 8049584:	0f 85 18 01 00 00    	jne    80496a2 <malloc+0x132>
+ 8049584:	0f 85 10 01 00 00    	jne    804969a <malloc+0x12a>
         }
         MN->busy = 1;
         return (void *)(MN + 1);
@@ -5348,306 +5348,315 @@ static RBNode MallocSearch(RBTree T, uint32_t key)
     
     if (T->root == &T->nil)
  80495a5:	3d 50 af 04 08       	cmp    $0x804af50,%eax
- 80495aa:	0f 84 80 00 00 00    	je     8049630 <malloc+0xc0>
+ 80495aa:	75 13                	jne    80495bf <malloc+0x4f>
+ 80495ac:	eb 7a                	jmp    8049628 <malloc+0xb8>
+ 80495ae:	66 90                	xchg   %ax,%ax
         return &T->nil;
     while (Tx != &T->nil) {
         Ty = Tx;
         if (key > Tx->key) {
- 80495b0:	3b 58 04             	cmp    0x4(%eax),%ebx
- 80495b3:	76 15                	jbe    80495ca <malloc+0x5a>
- 80495b5:	8d 76 00             	lea    0x0(%esi),%esi
             left = 0;
             Tx = Tx->right;
- 80495b8:	8b 50 0c             	mov    0xc(%eax),%edx
+ 80495b0:	8b 50 0c             	mov    0xc(%eax),%edx
+    if (T->root == &T->nil)
+        return &T->nil;
+    while (Tx != &T->nil) {
+        Ty = Tx;
+        if (key > Tx->key) {
+            left = 0;
+ 80495b3:	31 c9                	xor    %ecx,%ecx
     RBNode Ty;
     RBNode Tx = T->root;
     
     if (T->root == &T->nil)
         return &T->nil;
     while (Tx != &T->nil) {
- 80495bb:	81 fa 50 af 04 08    	cmp    $0x804af50,%edx
- 80495c1:	74 1d                	je     80495e0 <malloc+0x70>
-        return Tx;
-    return &T->nil;
-}
-
-void *malloc(uint32_t size)
-{
- 80495c3:	89 d0                	mov    %edx,%eax
-    
-    if (T->root == &T->nil)
-        return &T->nil;
-    while (Tx != &T->nil) {
+ 80495b5:	81 fa 50 af 04 08    	cmp    $0x804af50,%edx
+ 80495bb:	74 19                	je     80495d6 <malloc+0x66>
+ 80495bd:	89 d0                	mov    %edx,%eax
         Ty = Tx;
         if (key > Tx->key) {
- 80495c5:	3b 58 04             	cmp    0x4(%eax),%ebx
- 80495c8:	77 ee                	ja     80495b8 <malloc+0x48>
+ 80495bf:	3b 58 04             	cmp    0x4(%eax),%ebx
+ 80495c2:	77 ec                	ja     80495b0 <malloc+0x40>
             left = 0;
             Tx = Tx->right;
         } else if (key < Tx->key) {
- 80495ca:	73 2c                	jae    80495f8 <malloc+0x88>
+ 80495c4:	73 14                	jae    80495da <malloc+0x6a>
             left = 1;
             Tx = Tx->left;
- 80495cc:	8b 50 08             	mov    0x8(%eax),%edx
+ 80495c6:	8b 50 08             	mov    0x8(%eax),%edx
+        Ty = Tx;
+        if (key > Tx->key) {
+            left = 0;
+            Tx = Tx->right;
+        } else if (key < Tx->key) {
+            left = 1;
+ 80495c9:	b9 01 00 00 00       	mov    $0x1,%ecx
     RBNode Ty;
     RBNode Tx = T->root;
     
     if (T->root == &T->nil)
         return &T->nil;
     while (Tx != &T->nil) {
- 80495cf:	81 fa 50 af 04 08    	cmp    $0x804af50,%edx
- 80495d5:	74 21                	je     80495f8 <malloc+0x88>
-        return Tx;
-    return &T->nil;
-}
-
-void *malloc(uint32_t size)
-{
- 80495d7:	89 d0                	mov    %edx,%eax
- 80495d9:	eb ea                	jmp    80495c5 <malloc+0x55>
- 80495db:	90                   	nop
- 80495dc:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
+ 80495ce:	81 fa 50 af 04 08    	cmp    $0x804af50,%edx
+ 80495d4:	75 e7                	jne    80495bd <malloc+0x4d>
+            Tx = Tx->left;
+        } else
+            return Tx; 
     }
 
     if (left)
-        return Ty;
-    // left == 0
-    if ((Tx = RBNodeSucceeder(T, Ty)) != &T->nil)
- 80495e0:	83 ec 08             	sub    $0x8,%esp
- 80495e3:	50                   	push   %eax
- 80495e4:	68 4c af 04 08       	push   $0x804af4c
- 80495e9:	e8 82 03 00 00       	call   8049970 <RBNodeSucceeder>
- 80495ee:	83 c4 10             	add    $0x10,%esp
- 80495f1:	3d 50 af 04 08       	cmp    $0x804af50,%eax
- 80495f6:	74 38                	je     8049630 <malloc+0xc0>
+ 80495d6:	85 c9                	test   %ecx,%ecx
+ 80495d8:	74 36                	je     8049610 <malloc+0xa0>
         firsttime = 0;
     }
 
 Search:
     if ((trb = MallocSearch(&mm_rbtree, size)) != &mm_rbtree.nil) {
         RBTreeDeleteNode(&mm_rbtree, trb);  // Delete the node from tree.
- 80495f8:	83 ec 08             	sub    $0x8,%esp
-    }
-
-    if (left)
-        return Ty;
-    // left == 0
-    if ((Tx = RBNodeSucceeder(T, Ty)) != &T->nil)
- 80495fb:	89 c6                	mov    %eax,%esi
+ 80495da:	83 ec 08             	sub    $0x8,%esp
+    while (Tx != &T->nil) {
+        Ty = Tx;
+        if (key > Tx->key) {
+            left = 0;
+            Tx = Tx->right;
+        } else if (key < Tx->key) {
+ 80495dd:	89 c6                	mov    %eax,%esi
         firsttime = 0;
     }
 
 Search:
     if ((trb = MallocSearch(&mm_rbtree, size)) != &mm_rbtree.nil) {
         RBTreeDeleteNode(&mm_rbtree, trb);  // Delete the node from tree.
- 80495fd:	50                   	push   %eax
- 80495fe:	68 4c af 04 08       	push   $0x804af4c
- 8049603:	e8 f8 05 00 00       	call   8049c00 <RBTreeDeleteNode>
+ 80495df:	50                   	push   %eax
+ 80495e0:	68 4c af 04 08       	push   $0x804af4c
+ 80495e5:	e8 16 06 00 00       	call   8049c00 <RBTreeDeleteNode>
         MN = container_of(trb, struct mm_node, rb);
         if ((size+MMSIZE) < trb->key) {
- 8049608:	8d 43 20             	lea    0x20(%ebx),%eax
- 804960b:	83 c4 10             	add    $0x10,%esp
- 804960e:	3b 46 04             	cmp    0x4(%esi),%eax
- 8049611:	0f 82 c1 00 00 00    	jb     80496d8 <malloc+0x168>
+ 80495ea:	8d 43 20             	lea    0x20(%ebx),%eax
+ 80495ed:	83 c4 10             	add    $0x10,%esp
+ 80495f0:	3b 46 04             	cmp    0x4(%esi),%eax
+ 80495f3:	0f 82 d7 00 00 00    	jb     80496d0 <malloc+0x160>
             rbnode_init(&mm_rbtree, &SMN->rb, trb->key-size-MMSIZE, RED);
             list_add(&SMN->list_node, &MN->list_node);
             RBTreeInsert(&mm_rbtree, &SMN->rb);
             trb->key -= (SMN->rb.key + MMSIZE);
         }
         MN->busy = 1;
- 8049617:	c7 46 fc 01 00 00 00 	movl   $0x1,-0x4(%esi)
+ 80495f9:	c7 46 fc 01 00 00 00 	movl   $0x1,-0x4(%esi)
     MN->busy = 0;
     rbnode_init(&mm_rbtree, &MN->rb, tsize-MMSIZE, RED);
     list_add_tail(&MN->list_node, &list_head);
     RBTreeInsert(&mm_rbtree, &MN->rb);
     goto Search;
 }
- 804961e:	8d 65 f4             	lea    -0xc(%ebp),%esp
+ 8049600:	8d 65 f4             	lea    -0xc(%ebp),%esp
             list_add(&SMN->list_node, &MN->list_node);
             RBTreeInsert(&mm_rbtree, &SMN->rb);
             trb->key -= (SMN->rb.key + MMSIZE);
         }
         MN->busy = 1;
         return (void *)(MN + 1);
- 8049621:	8d 46 1c             	lea    0x1c(%esi),%eax
+ 8049603:	8d 46 1c             	lea    0x1c(%esi),%eax
     MN->busy = 0;
     rbnode_init(&mm_rbtree, &MN->rb, tsize-MMSIZE, RED);
     list_add_tail(&MN->list_node, &list_head);
     RBTreeInsert(&mm_rbtree, &MN->rb);
     goto Search;
 }
- 8049624:	5b                   	pop    %ebx
- 8049625:	5e                   	pop    %esi
- 8049626:	5f                   	pop    %edi
- 8049627:	5d                   	pop    %ebp
- 8049628:	c3                   	ret    
- 8049629:	8d b4 26 00 00 00 00 	lea    0x0(%esi,%eiz,1),%esi
+ 8049606:	5b                   	pop    %ebx
+ 8049607:	5e                   	pop    %esi
+ 8049608:	5f                   	pop    %edi
+ 8049609:	5d                   	pop    %ebp
+ 804960a:	c3                   	ret    
+ 804960b:	90                   	nop
+ 804960c:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
+    }
+
+    if (left)
+        return Ty;
+    // left == 0
+    return RBNodeSucceeder(T, Ty);
+ 8049610:	83 ec 08             	sub    $0x8,%esp
+ 8049613:	50                   	push   %eax
+ 8049614:	68 4c af 04 08       	push   $0x804af4c
+ 8049619:	e8 52 03 00 00       	call   8049970 <RBNodeSucceeder>
+        LIST_HEAD_INIT(list_head);
+        firsttime = 0;
+    }
+
+Search:
+    if ((trb = MallocSearch(&mm_rbtree, size)) != &mm_rbtree.nil) {
+ 804961e:	83 c4 10             	add    $0x10,%esp
+ 8049621:	3d 50 af 04 08       	cmp    $0x804af50,%eax
+ 8049626:	75 b2                	jne    80495da <malloc+0x6a>
         }
         MN->busy = 1;
         return (void *)(MN + 1);
     }
 
     tsize = ROUNDUP(size+MMSIZE, PGSIZE);
- 8049630:	8b 7d e0             	mov    -0x20(%ebp),%edi
- 8049633:	2b 7d dc             	sub    -0x24(%ebp),%edi
+ 8049628:	8b 55 e0             	mov    -0x20(%ebp),%edx
+ 804962b:	2b 55 dc             	sub    -0x24(%ebp),%edx
     if (!(MN = (struct mm_node *)sbrk(tsize))) 
- 8049636:	83 ec 0c             	sub    $0xc,%esp
- 8049639:	57                   	push   %edi
- 804963a:	e8 01 fc ff ff       	call   8049240 <sbrk>
- 804963f:	83 c4 10             	add    $0x10,%esp
- 8049642:	85 c0                	test   %eax,%eax
- 8049644:	89 c6                	mov    %eax,%esi
- 8049646:	74 50                	je     8049698 <malloc+0x128>
+ 804962e:	83 ec 0c             	sub    $0xc,%esp
+ 8049631:	52                   	push   %edx
+ 8049632:	89 55 e4             	mov    %edx,-0x1c(%ebp)
+ 8049635:	e8 06 fc ff ff       	call   8049240 <sbrk>
+ 804963a:	83 c4 10             	add    $0x10,%esp
+ 804963d:	85 c0                	test   %eax,%eax
+ 804963f:	89 c6                	mov    %eax,%esi
+ 8049641:	74 4d                	je     8049690 <malloc+0x120>
         return NULL;
     MN->busy = 0;
     rbnode_init(&mm_rbtree, &MN->rb, tsize-MMSIZE, RED);
- 8049648:	8d 46 04             	lea    0x4(%esi),%eax
- 804964b:	8d 57 e0             	lea    -0x20(%edi),%edx
+ 8049643:	8b 55 e4             	mov    -0x1c(%ebp),%edx
+ 8049646:	8d 78 04             	lea    0x4(%eax),%edi
     }
 
     tsize = ROUNDUP(size+MMSIZE, PGSIZE);
     if (!(MN = (struct mm_node *)sbrk(tsize))) 
         return NULL;
     MN->busy = 0;
- 804964e:	c7 06 00 00 00 00    	movl   $0x0,(%esi)
+ 8049649:	c7 00 00 00 00 00    	movl   $0x0,(%eax)
     rbnode_init(&mm_rbtree, &MN->rb, tsize-MMSIZE, RED);
- 8049654:	6a 00                	push   $0x0
- 8049656:	52                   	push   %edx
- 8049657:	50                   	push   %eax
- 8049658:	68 4c af 04 08       	push   $0x804af4c
- 804965d:	89 45 e4             	mov    %eax,-0x1c(%ebp)
- 8049660:	e8 4b 02 00 00       	call   80498b0 <rbnode_init>
+ 804964f:	6a 00                	push   $0x0
+ 8049651:	83 ea 20             	sub    $0x20,%edx
+ 8049654:	52                   	push   %edx
+ 8049655:	57                   	push   %edi
+ 8049656:	68 4c af 04 08       	push   $0x804af4c
+ 804965b:	e8 50 02 00 00       	call   80498b0 <rbnode_init>
 }
 
 static void list_add_tail(struct list_head *new_node, struct list_head *head)
 {
     new_node->next = head;
     new_node->prev = head->prev;
- 8049665:	8b 0d 48 af 04 08    	mov    0x804af48,%ecx
+ 8049660:	8b 0d 48 af 04 08    	mov    0x804af48,%ecx
     list_add_tail(&MN->list_node, &list_head);
- 804966b:	8d 56 18             	lea    0x18(%esi),%edx
+ 8049666:	8d 56 18             	lea    0x18(%esi),%edx
     new_node->prev = head; 
 }
 
 static void list_add_tail(struct list_head *new_node, struct list_head *head)
 {
     new_node->next = head;
- 804966e:	c7 46 18 44 af 04 08 	movl   $0x804af44,0x18(%esi)
+ 8049669:	c7 46 18 44 af 04 08 	movl   $0x804af44,0x18(%esi)
     new_node->prev = head->prev;
- 8049675:	89 4e 1c             	mov    %ecx,0x1c(%esi)
+ 8049670:	89 4e 1c             	mov    %ecx,0x1c(%esi)
     new_node->prev->next = new_node;
- 8049678:	89 11                	mov    %edx,(%ecx)
-    RBTreeInsert(&mm_rbtree, &MN->rb);
- 804967a:	58                   	pop    %eax
- 804967b:	8b 45 e4             	mov    -0x1c(%ebp),%eax
+ 8049673:	89 11                	mov    %edx,(%ecx)
     head->prev = new_node;
- 804967e:	89 15 48 af 04 08    	mov    %edx,0x804af48
- 8049684:	5a                   	pop    %edx
- 8049685:	50                   	push   %eax
- 8049686:	68 4c af 04 08       	push   $0x804af4c
- 804968b:	e8 20 03 00 00       	call   80499b0 <RBTreeInsert>
+ 8049675:	89 15 48 af 04 08    	mov    %edx,0x804af48
+    RBTreeInsert(&mm_rbtree, &MN->rb);
+ 804967b:	58                   	pop    %eax
+ 804967c:	5a                   	pop    %edx
+ 804967d:	57                   	push   %edi
+ 804967e:	68 4c af 04 08       	push   $0x804af4c
+ 8049683:	e8 28 03 00 00       	call   80499b0 <RBTreeInsert>
     goto Search;
- 8049690:	83 c4 10             	add    $0x10,%esp
- 8049693:	e9 08 ff ff ff       	jmp    80495a0 <malloc+0x30>
+ 8049688:	83 c4 10             	add    $0x10,%esp
+ 804968b:	e9 10 ff ff ff       	jmp    80495a0 <malloc+0x30>
 }
- 8049698:	8d 65 f4             	lea    -0xc(%ebp),%esp
+ 8049690:	8d 65 f4             	lea    -0xc(%ebp),%esp
         return (void *)(MN + 1);
     }
 
     tsize = ROUNDUP(size+MMSIZE, PGSIZE);
     if (!(MN = (struct mm_node *)sbrk(tsize))) 
         return NULL;
- 804969b:	31 c0                	xor    %eax,%eax
+ 8049693:	31 c0                	xor    %eax,%eax
     MN->busy = 0;
     rbnode_init(&mm_rbtree, &MN->rb, tsize-MMSIZE, RED);
     list_add_tail(&MN->list_node, &list_head);
     RBTreeInsert(&mm_rbtree, &MN->rb);
     goto Search;
 }
- 804969d:	5b                   	pop    %ebx
- 804969e:	5e                   	pop    %esi
- 804969f:	5f                   	pop    %edi
- 80496a0:	5d                   	pop    %ebp
- 80496a1:	c3                   	ret    
+ 8049695:	5b                   	pop    %ebx
+ 8049696:	5e                   	pop    %esi
+ 8049697:	5f                   	pop    %edi
+ 8049698:	5d                   	pop    %ebp
+ 8049699:	c3                   	ret    
     uint32_t tsize;
     struct mm_node *MN, *SMN;
 
     static int firsttime = 1;
     if (firsttime) {
         rbtree_init(&mm_rbtree);
- 80496a2:	83 ec 0c             	sub    $0xc,%esp
- 80496a5:	68 4c af 04 08       	push   $0x804af4c
- 80496aa:	e8 31 02 00 00       	call   80498e0 <rbtree_init>
+ 804969a:	83 ec 0c             	sub    $0xc,%esp
+ 804969d:	68 4c af 04 08       	push   $0x804af4c
+ 80496a2:	e8 39 02 00 00       	call   80498e0 <rbtree_init>
         LIST_HEAD_INIT(list_head);
- 80496af:	c7 05 44 af 04 08 44 	movl   $0x804af44,0x804af44
- 80496b6:	af 04 08 
- 80496b9:	c7 05 48 af 04 08 44 	movl   $0x804af44,0x804af48
- 80496c0:	af 04 08 
+ 80496a7:	c7 05 44 af 04 08 44 	movl   $0x804af44,0x804af44
+ 80496ae:	af 04 08 
+ 80496b1:	c7 05 48 af 04 08 44 	movl   $0x804af44,0x804af48
+ 80496b8:	af 04 08 
         firsttime = 0;
- 80496c3:	83 c4 10             	add    $0x10,%esp
- 80496c6:	c7 05 c0 ae 04 08 00 	movl   $0x0,0x804aec0
- 80496cd:	00 00 00 
- 80496d0:	e9 b5 fe ff ff       	jmp    804958a <malloc+0x1a>
- 80496d5:	8d 76 00             	lea    0x0(%esi),%esi
+ 80496bb:	83 c4 10             	add    $0x10,%esp
+ 80496be:	c7 05 c0 ae 04 08 00 	movl   $0x0,0x804aec0
+ 80496c5:	00 00 00 
+ 80496c8:	e9 bd fe ff ff       	jmp    804958a <malloc+0x1a>
+ 80496cd:	8d 76 00             	lea    0x0(%esi),%esi
 Search:
     if ((trb = MallocSearch(&mm_rbtree, size)) != &mm_rbtree.nil) {
         RBTreeDeleteNode(&mm_rbtree, trb);  // Delete the node from tree.
         MN = container_of(trb, struct mm_node, rb);
         if ((size+MMSIZE) < trb->key) {
             SMN = (struct mm_node *)((char *)(MN + 1) + size); 
- 80496d8:	8d 7c 1e 1c          	lea    0x1c(%esi,%ebx,1),%edi
+ 80496d0:	8d 7c 1e 1c          	lea    0x1c(%esi,%ebx,1),%edi
             SMN->busy = 0;
- 80496dc:	c7 07 00 00 00 00    	movl   $0x0,(%edi)
+ 80496d4:	c7 07 00 00 00 00    	movl   $0x0,(%edi)
             rbnode_init(&mm_rbtree, &SMN->rb, trb->key-size-MMSIZE, RED);
- 80496e2:	6a 00                	push   $0x0
- 80496e4:	8d 57 04             	lea    0x4(%edi),%edx
- 80496e7:	8b 46 04             	mov    0x4(%esi),%eax
- 80496ea:	89 55 e4             	mov    %edx,-0x1c(%ebp)
- 80496ed:	83 e8 20             	sub    $0x20,%eax
- 80496f0:	29 d8                	sub    %ebx,%eax
- 80496f2:	50                   	push   %eax
- 80496f3:	52                   	push   %edx
- 80496f4:	68 4c af 04 08       	push   $0x804af4c
- 80496f9:	e8 b2 01 00 00       	call   80498b0 <rbnode_init>
+ 80496da:	6a 00                	push   $0x0
+ 80496dc:	8d 57 04             	lea    0x4(%edi),%edx
+ 80496df:	8b 46 04             	mov    0x4(%esi),%eax
+ 80496e2:	89 55 e4             	mov    %edx,-0x1c(%ebp)
+ 80496e5:	83 e8 20             	sub    $0x20,%eax
+ 80496e8:	29 d8                	sub    %ebx,%eax
+ 80496ea:	50                   	push   %eax
+ 80496eb:	52                   	push   %edx
+ 80496ec:	68 4c af 04 08       	push   $0x804af4c
+ 80496f1:	e8 ba 01 00 00       	call   80498b0 <rbnode_init>
     return (head->next == head);
 }
 
 static void list_add(struct list_head *new_node, struct list_head *head)
 {
     new_node->next = head->next;
- 80496fe:	8b 4e 14             	mov    0x14(%esi),%ecx
+ 80496f6:	8b 4e 14             	mov    0x14(%esi),%ecx
             list_add(&SMN->list_node, &MN->list_node);
- 8049701:	8d 47 18             	lea    0x18(%edi),%eax
+ 80496f9:	8d 47 18             	lea    0x18(%edi),%eax
             RBTreeInsert(&mm_rbtree, &SMN->rb);
- 8049704:	8b 55 e4             	mov    -0x1c(%ebp),%edx
- 8049707:	89 4f 18             	mov    %ecx,0x18(%edi)
+ 80496fc:	8b 55 e4             	mov    -0x1c(%ebp),%edx
+ 80496ff:	89 4f 18             	mov    %ecx,0x18(%edi)
     head->next->prev = new_node;    
- 804970a:	8b 4e 14             	mov    0x14(%esi),%ecx
- 804970d:	89 41 04             	mov    %eax,0x4(%ecx)
+ 8049702:	8b 4e 14             	mov    0x14(%esi),%ecx
+ 8049705:	89 41 04             	mov    %eax,0x4(%ecx)
     head->next = new_node;
- 8049710:	89 46 14             	mov    %eax,0x14(%esi)
+ 8049708:	89 46 14             	mov    %eax,0x14(%esi)
         MN = container_of(trb, struct mm_node, rb);
         if ((size+MMSIZE) < trb->key) {
             SMN = (struct mm_node *)((char *)(MN + 1) + size); 
             SMN->busy = 0;
             rbnode_init(&mm_rbtree, &SMN->rb, trb->key-size-MMSIZE, RED);
             list_add(&SMN->list_node, &MN->list_node);
- 8049713:	8d 46 14             	lea    0x14(%esi),%eax
- 8049716:	89 47 1c             	mov    %eax,0x1c(%edi)
+ 804970b:	8d 46 14             	lea    0x14(%esi),%eax
+ 804970e:	89 47 1c             	mov    %eax,0x1c(%edi)
             RBTreeInsert(&mm_rbtree, &SMN->rb);
- 8049719:	59                   	pop    %ecx
- 804971a:	5b                   	pop    %ebx
- 804971b:	52                   	push   %edx
- 804971c:	68 4c af 04 08       	push   $0x804af4c
- 8049721:	e8 8a 02 00 00       	call   80499b0 <RBTreeInsert>
+ 8049711:	59                   	pop    %ecx
+ 8049712:	5b                   	pop    %ebx
+ 8049713:	52                   	push   %edx
+ 8049714:	68 4c af 04 08       	push   $0x804af4c
+ 8049719:	e8 92 02 00 00       	call   80499b0 <RBTreeInsert>
             trb->key -= (SMN->rb.key + MMSIZE);
- 8049726:	8b 46 04             	mov    0x4(%esi),%eax
- 8049729:	83 c4 10             	add    $0x10,%esp
- 804972c:	83 e8 20             	sub    $0x20,%eax
- 804972f:	2b 47 08             	sub    0x8(%edi),%eax
- 8049732:	89 46 04             	mov    %eax,0x4(%esi)
- 8049735:	e9 dd fe ff ff       	jmp    8049617 <malloc+0xa7>
- 804973a:	8d b6 00 00 00 00    	lea    0x0(%esi),%esi
+ 804971e:	8b 46 04             	mov    0x4(%esi),%eax
+ 8049721:	83 c4 10             	add    $0x10,%esp
+ 8049724:	83 e8 20             	sub    $0x20,%eax
+ 8049727:	2b 47 08             	sub    0x8(%edi),%eax
+ 804972a:	89 46 04             	mov    %eax,0x4(%esi)
+ 804972d:	e9 c7 fe ff ff       	jmp    80495f9 <malloc+0x89>
+ 8049732:	8d b4 26 00 00 00 00 	lea    0x0(%esi,%eiz,1),%esi
+ 8049739:	8d bc 27 00 00 00 00 	lea    0x0(%edi,%eiz,1),%edi
 
 08049740 <find_siblings>:
     RBTreeInsert(&mm_rbtree, &MN->rb);
