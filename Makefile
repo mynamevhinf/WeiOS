@@ -81,7 +81,6 @@ SHELLLIB = $(ULIB) user/umalloc.o lib/krbfunc.o
 
 _sh: uentry.o user/sh.o $(SHELLLIB)
 	$(LD) $(LDFLAGS) -N -e _ustart -Ttext 0x08048000 -o $@ $^
-	$(OBJDUMP) -S $@ > $*.asm
 _%: uentry.o user/%.o $(ULIB)
 	$(LD) $(LDFLAGS) -N -e _ustart -Ttext 0x08048000 -o $@ $^
 	$(OBJDUMP) -S $@ > $*.asm
