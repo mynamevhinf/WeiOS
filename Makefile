@@ -51,27 +51,27 @@ CFLAGS += -fno-stack-protector
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide 
 LDFLAGS += -m elf_i386
 
-WeiOS: bootblock kernel fs.img
-	dd if=/dev/zero of=WeiOS count=10000
-	dd if=bootblock of=WeiOS conv=notrunc
-	dd if=kernel of=WeiOS seek=1 conv=notrunc
+WeiOS: bootblock kernel obj/fs.img
+	dd if=/dev/zero of=obj/WeiOS count=10000
+	dd if=bootblock of=obj/WeiOS conv=notrunc
+	dd if=kernel of=obj/WeiOS seek=1 conv=notrunc
 
 bootblock: boot/boot.S boot/bootmain.c
 	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -c boot/bootmain.c
 	$(CC) $(CFLAGS) -fno-pic -nostdinc -c boot/boot.S
 	$(LD) $(LDFLAGS) -N -e start_16 -Ttext 0x7c00 -o bootblock.o boot.o bootmain.o
-	$(OBJDUMP) -S bootblock.o > ./obj/boot/bootblock.asm
+	#$(OBJDUMP) -S bootblock.o > ./obj/boot/bootblock.asm
 	$(OBJCOPY) -S -O binary bootblock.o bootblock
 
 initprocess: kern/initprocess.S
 	$(CC) $(CFLAGS) -nostdinc -I. -c kern/initprocess.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0x08048000 -o initprocess initprocess.o
-	$(OBJDUMP) -S initprocess.o > ./obj/user/initprocess.asm
+	#$(OBJDUMP) -S initprocess.o > ./obj/user/initprocess.asm
 
-kernel: $(OBJS) entry.o initprocess kernel.ld 
-	$(LD) $(LDFLAGS) -T kernel.ld -nostdlib -o kernel entry.o $(OBJS) -b binary initprocess
-	$(OBJDUMP) -S kernel > ./obj/kernel/kernel.asm
-	$(OBJDUMP) -t kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > ./obj/kernel/kernel.sym
+kernel: $(OBJS) entry.o initprocess ld/kernel.ld 
+	$(LD) $(LDFLAGS) -T ld/kernel.ld -nostdlib -o kernel entry.o $(OBJS) -b binary initprocess
+	#$(OBJDUMP) -S kernel > ./obj/kernel/kernel.asm
+	#$(OBJDUMP) -t kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > ./obj/kernel/kernel.sym
 
 entry.o: kern/entry.S
 	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -c kern/entry.S
@@ -83,7 +83,7 @@ _sh: uentry.o user/sh.o $(SHELLLIB)
 	$(LD) $(LDFLAGS) -N -e _ustart -Ttext 0x08048000 -o $@ $^
 _%: uentry.o user/%.o $(ULIB)
 	$(LD) $(LDFLAGS) -N -e _ustart -Ttext 0x08048000 -o $@ $^
-	$(OBJDUMP) -S $@ > $*.asm
+	#$(OBJDUMP) -S $@ > $*.asm
 
 uentry.o: user/uentry.S
 	$(CC) $(CFLAGS) -nostdinc -I. -c user/uentry.S
@@ -102,13 +102,13 @@ UPROGS = \
 	_mv\
 	_rm\
 
-fs.img: mkfs $(UPROGS)
-	./mkfs fs.img Makefile cattest.txt $(UPROGS)
+obj/fs.img: mkfs $(UPROGS)
+	./mkfs obj/fs.img Makefile cattest.txt $(UPROGS)
 
 all: WeiOS
 
 cleanWOS:
-	$(V)rm WeiOS kernel bootblock fs.img
+	$(V)rm obj/WeiOS kernel bootblock obj/fs.img
 
 clean:
 	$(V)rm -f mkfs kern/*.o kern/*.d lib/*.o lib/*.d \

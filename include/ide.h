@@ -2,7 +2,6 @@
 #define _IDE_H_
 
 // Status
-#define SECTSIZE	512
 #define IDE_BUSY	0x80
 #define IDE_READY 	0x40
 #define IDE_WRFLT	0x20

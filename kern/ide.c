@@ -170,8 +170,9 @@ int ide_read_write(struct buf *b)
     	ide_start(b);
 
   	// Wait for request to finish.
-    while((b->flag & (B_VALID | B_DIRTY)) != B_VALID) 
+    while ((b->flag & (B_VALID | B_DIRTY)) != B_VALID) { 
         sleep(&b->waiting_for_io, &ide_manager.ide_lock);
+    }
   	spin_unlock_irqrestore(&ide_manager.ide_lock);
     return 0;
 }

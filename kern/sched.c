@@ -194,8 +194,8 @@ void sched(void)
 {
 	struct proc  *p = myproc();
 
-	if (p->status == RUNNING)
-		panic("sched while current process running!\n");
+	if (p->status == RUNNING) 
+		panic("sched while current process: %s running!\n", p->name);
 	if (reflags() & EFLAGS_IF)
 		panic("sched while interrup enabled!\n");
     // We cannot do task switch if the process is in running.

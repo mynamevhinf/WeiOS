@@ -2,4 +2,4 @@
 
 make
 make clean
-./scripts/write_55aa WeiOS 
+./scripts/write_55aa obj/WeiOS 

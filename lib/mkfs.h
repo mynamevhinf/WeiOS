@@ -22,6 +22,7 @@ typedef uint pde_t;
 
 //include/fs.h
 #define BLKSIZE  512
+//#define BLKSIZE  4096 
 
 struct superblock {
 	uint size; //size of file system (in blocks)

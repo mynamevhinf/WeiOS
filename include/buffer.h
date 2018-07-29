@@ -3,10 +3,10 @@
 
 #define HASHSLOT  7
 
-#define BLKSIZE 512
 #define B_BUSY  0x1
 #define B_VALID	0x2
 #define B_DIRTY	0x4
+#define BLKSIZE 512 
 
 #ifndef __ASSEMBLER__
 
