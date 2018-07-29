@@ -2,7 +2,7 @@
 #include <include/x86.h>
 #include <include/elf.h>
 
-#define BLKSIZE 512
+#define SECTORSIZE 512 
 
 void readdisk(void *dst, uint sec_num);
 void readsegment(uchar *pa, uint bytes, uint offset);
@@ -45,18 +45,20 @@ void waitfordisk(void)
 // void outb(ushort port, uchar data)
 void readdisk(void *dst, uint sec_num)
 {
+    int rsec_num, secs_per_blk;
+    secs_per_blk = SECTORSIZE / SECTORSIZE;
+    rsec_num = secs_per_blk * sec_num;
 
-    waitfordisk();
-    
-    outb(0x1f2, 1);
-    outb(0x1f3, sec_num & 0xff);
-    outb(0x1f4, (sec_num>>8) & 0xff);
-    outb(0x1f5, (sec_num>>16) & 0xff);
-    outb(0x1f6, LBA|0xA0|((sec_num>>24) & 0x0f));
+    waitfordisk();    
+    outb(0x1f2, secs_per_blk);
+    outb(0x1f3, rsec_num & 0xff);
+    outb(0x1f4, (rsec_num>>8) & 0xff);
+    outb(0x1f5, (rsec_num>>16) & 0xff);
+    outb(0x1f6, LBA|0xA0|((rsec_num>>24) & 0x0f));
     outb(0x1f7, 0x20);
 
     waitfordisk();
-    insl(0x1f0, dst, BLKSIZE/4);
+    insl(0x1f0, dst, SECTORSIZE/4);
 }
 
 // read a segment into memory
@@ -66,8 +68,8 @@ void readsegment(uchar *pa, uint bytes, uint offset)
     uint  sec_num;
     uchar *epa = pa + bytes;
     
-    sec_num = offset / BLKSIZE + 1;
-    for (pa -= (offset%BLKSIZE); pa < epa; sec_num++, pa += BLKSIZE)  
+    sec_num = offset / SECTORSIZE + 1;
+    for (pa -= (offset%SECTORSIZE); pa < epa; sec_num++, pa += SECTORSIZE)  
         readdisk(pa, sec_num);
 }
 

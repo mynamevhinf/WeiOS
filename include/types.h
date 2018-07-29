@@ -1,6 +1,8 @@
 #ifndef _TYPE_H_
 #define _TYPE_H_
 
+#include <include/param.h>
+
 typedef unsigned int    uint;
 typedef unsigned int    size_t;
 typedef unsigned char   uchar;

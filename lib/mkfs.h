@@ -4,7 +4,8 @@ typedef unsigned short ushort;
 typedef unsigned char  uchar;
 typedef uint pde_t;
 
-//include/param.h
+#include "../include/param.h"
+/*
 #define NPROCS       1024  // maximum number of processes
 #define N_PRIORITY   40  // maximum priority
 #define NCPU         1   // maximum number of CPUs
@@ -19,10 +20,14 @@ typedef uint pde_t;
 #define LOGSIZE      (MAXOPBLOCKS*3)  // max data blocks in on-disk log
 #define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
 #define FSSIZE		 40000 // size of file system in blocks
+*/
 
 //include/fs.h
-#define BLKSIZE  512
-//#define BLKSIZE  4096 
+#if (SMALLSECTOR == 1)
+#define BLKSIZE 512 
+#else
+#define BLKSIZE 4096
+#endif
 
 struct superblock {
 	uint size; //size of file system (in blocks)

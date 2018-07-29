@@ -90,16 +90,24 @@ void ide_init(void)
 
 static void ide_start(struct buf *b)
 {
+    int rblkno, secs_per_blk;
   	if (!b || b->blockno >= FSSIZE)
   		  return ;
 
   	ide_wait(0);
   	outb(0x3F6, 0);	// enable interrupt
-  	outb(0x1F2, 1);
-    outb(0x1F3, b->blockno & 0xff);
-    outb(0x1F4, (b->blockno >> 8) & 0xff);
-    outb(0x1F5, (b->blockno >> 16) & 0xff);
-    outb(IDE_DRIVE_PORT, LBA|0xA0|((b->dev & 1) << 4)|((b->blockno>>24)&0x0f));
+#if (BLKSIZE == 512)
+    secs_per_blk = 1;
+  	rblkno = b->blockno;
+#else
+    secs_per_blk = 8;
+    rblkno = b->blockno * 8;
+#endif
+    outb(0x1F2, secs_per_blk);
+    outb(0x1F3, rblkno & 0xff);
+    outb(0x1F4, (rblkno >> 8) & 0xff);
+    outb(0x1F5, (rblkno >> 16) & 0xff);
+    outb(IDE_DRIVE_PORT, LBA|0xA0|((b->dev & 1) << 4)|((rblkno>>24)&0x0f));
     if (b->flag & B_DIRTY) {
       	outb(IDE_CMD_PORT, IDE_WRITE);
       	outsl(IDE_DATA_PORT, b->data, BLKSIZE / 4); // BLKSIZE / 4 double word

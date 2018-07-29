@@ -1,8 +1,6 @@
 #ifndef _FS_H_
 #define _FS_H_
 
-#define BLKSIZE 512	
-
 #include <include/types.h>
 
 struct superblock {

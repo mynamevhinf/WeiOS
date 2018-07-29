@@ -1,18 +1,17 @@
 #ifndef _BUF_H_
 #define _BUF_H_
 
-#define HASHSLOT  7
-
-#define B_BUSY  0x1
-#define B_VALID	0x2
-#define B_DIRTY	0x4
-#define BLKSIZE 512 
-
 #ifndef __ASSEMBLER__
 
 #include <include/lock.h>
 #include <include/types.h>
 #include <include/kernel.h>
+
+#define HASHSLOT  7
+
+#define B_BUSY  0x1
+#define B_VALID	0x2
+#define B_DIRTY	0x4
 
 struct dozenbufs;
 
