@@ -108,7 +108,8 @@ int pipe_write(struct pipe *p, char *src, int nbytes)
 	for (total = 0; total < nbytes; total++) {
 		if ((p->nwrite - p->nread) == PIPESIZE)
 			break;
-		src[total] = p->data[(p->nread++ % PIPESIZE)];
+		//src[total] = p->data[(p->nread++ % PIPESIZE)];
+		p->data[(p->nwrite++ % PIPESIZE)] = src[total];
 	}
 
 	wakeup(&p->wait_to_read, &p->pipe_lock);
