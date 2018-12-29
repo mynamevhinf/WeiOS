@@ -15,7 +15,7 @@
 ![image](https://github.com/mynamevhinf/WeiOS/blob/master/images/Selection_003.png)
 <br><br>
 
-韦清福的内核开发手册
+WeiOS内核结构
 ======
 引导启动程序
 ------
